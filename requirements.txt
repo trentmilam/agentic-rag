@@ -1,0 +1,43 @@
+# agentic-rag runtime dependencies -- the full stack, pinned exactly (not floors) so a
+# fresh `pip install -r requirements.txt` resolves to the versions this repo was
+# verified against, rather than whatever happens to be latest later. The pins below
+# also fully satisfy RAGpack's own (floor-based) dependencies.
+#
+# SIBLING REPOS (not on PyPI -- see the README "Honest scope" section):
+#   RAGpack   -- the ingest/chunk/embed/store engine; pip-installed editable:  pip install -e ../RAGpack
+#   consilium -- routing/citation-gating/hardening spine; imported via sys.path; NOT pip-installed
+#   linkgraph -- relationship graph (MCP tools only); imported via sys.path; NOT pip-installed
+# Verified this release against: RAGpack@a0078fb, consilium@5228cbb, linkgraph@46bdd04.
+# Re-clone the siblings adjacent to this repo under the same parent directory.
+
+# --- corpus fetch (corpus_fetch/, real HTTPS to rfc-editor.org / iana.org) ---
+requests==2.34.2
+
+# --- chat UI (app.py) -- gradio ChatInterface (pulls fastapi/uvicorn/etc. transitively) ---
+gradio==6.19.0
+
+# --- MCP server (agenticrag/mcp/) -- FastMCP API confirmed against this exact SDK ---
+mcp==1.28.1
+
+# --- vector store: Qdrant embedded LOCAL mode (no server, no Docker; exact brute-force) ---
+qdrant-client==1.18.0
+
+# --- embedding stack: BAAI/bge-base-en-v1.5 (768-dim) via fastembed on ONNX Runtime ---
+numpy==2.5.1
+tokenizers==0.23.1
+# CPU build -- the portable default. Query embedding is one short string (instant on CPU);
+# ingesting the full 321k-chunk corpus is many hours on CPU vs minutes on a GPU. RAGpack's
+# device="auto" uses the GPU automatically IF the GPU build below is installed instead.
+fastembed==0.8.0
+onnxruntime==1.27.0
+#
+# GPU opt-in (CUDA-accelerated ingest -- the build this release was live-verified on):
+# replace the two CPU lines directly above with the GPU builds below, and make sure the
+# CUDA 12 + cuDNN 9 runtime libraries are reachable on PATH (a system CUDA install, the
+# nvidia-cuda-runtime-cu12 + nvidia-cudnn-cu12 wheels, or a torch GPU build). Same versions,
+# identical model + code path -- only the ONNX Runtime execution provider changes
+# (RAGpack.resolve_device: auto -> cuda, with CPUExecutionProvider kept as the in-session
+# fallback). If the CUDA libraries are absent, ONNX Runtime prints a one-line provider
+# warning and falls back to CPU; it does not crash.
+#   fastembed-gpu==0.8.0
+#   onnxruntime-gpu==1.27.0

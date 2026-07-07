@@ -1,0 +1,65 @@
+name: CI
+
+# Runs the fast, corpus-free checks on every push / PR. The corpus-dependent
+# evals (eval/eval_agenticrag.py, eval/prove_revision_guard.py) are NOT run here:
+# they need the ingested 321k-chunk corpus, which is fetched+built locally and
+# never committed (see the README "Full verify").
+#
+# agentic-rag is not standalone -- it imports the consilium and linkgraph sibling
+# repos via sys.path and installs RAGpack editable (see the README "Honest scope").
+# CI reproduces that sibling layout by checking each one out next to this repo,
+# pinned to the exact commit this release was verified against (kept in lockstep
+# with requirements.txt's "Verified this release against" line). The siblings are
+# public repos, so the default token can read them; bump all three SHAs together
+# whenever the verified sibling set changes.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quick-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out agentic-rag
+        uses: actions/checkout@v4
+        with:
+          path: agentic-rag
+
+      - name: Check out consilium (verified sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: trentmilam/consilium
+          ref: 5228cbb7cdd8c316702d48a884bab91f25712c5f
+          path: consilium
+
+      - name: Check out linkgraph (verified sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: trentmilam/linkgraph
+          ref: 46bdd04d2dd9eed57cb5af0d26bbd33468264eb8
+          path: linkgraph
+
+      - name: Check out RAGpack (verified sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: trentmilam/RAGpack
+          ref: a0078fb12608da6f7900b116167ddfa6efa77775
+          path: RAGpack
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies (agentic-rag + editable RAGpack)
+        working-directory: agentic-rag
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ../RAGpack
+
+      - name: Quick verify (corpus-free pytest)
+        working-directory: agentic-rag
+        run: python scripts/verify.py

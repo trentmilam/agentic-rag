@@ -1,0 +1,27 @@
+# agentic-rag is an APPLICATION run from source (dependencies via requirements.txt +
+# the sibling repos described in the README), not a distributable library, so this
+# file intentionally has no [build-system] / packaging section -- it exists to hold
+# project metadata and the pytest configuration.
+
+[project]
+name = "agentic-rag"
+version = "0.1.0"
+description = "Cited, revision-aware RAG over the real IETF RFC/errata/IANA corpus, with a deterministic supersession-graph lookup and an MCP server."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Trent Milam" }]
+
+[tool.pytest.ini_options]
+# Pin the rootdir to THIS repo. Without an explicit config here, pytest walks up
+# and can adopt an unrelated ancestor directory's pytest.ini as its rootdir/
+# configfile on another machine -- silently changing collection behavior. This
+# file being present makes the repo its own rootdir on every clone.
+#
+# testpaths lists ONLY the fast, corpus-free suites. The corpus-dependent evals
+# (eval/eval_agenticrag.py, eval/prove_revision_guard.py) are plain scripts, not
+# test_*.py files, so pytest never collects them -- they need the ingested 321k
+# chunk corpus and are run manually (see the README "Full verify").
+testpaths = ["tests", "agenticrag/mcp", "eval"]
+python_files = ["test_*.py"]
+addopts = "-q"

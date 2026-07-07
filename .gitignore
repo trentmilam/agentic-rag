@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.log
+.venv/
+data/raw/
+data/qdrant*/
+data/entities/
+data/state.json
+
+# Python tooling artifacts (defense-in-depth for contributors running these locally)
+.pytest_cache/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
