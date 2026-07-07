@@ -1,0 +1,8 @@
+# graphrx (rag-reliability/graphrx) is a SIBLING repo, imported via
+# linkgraph/_paths.py's sys.path insertion -- not pip-installed, not listed here.
+# It depends on numpy (graph.py/lint.py import it at module level even for the
+# adjacency()-only code path this repo uses), so it is declared here explicitly.
+numpy>=1.26
+
+# pytest tests/ -- contract/unit tests alongside eval.py's red/green self-test.
+pytest>=8.0
