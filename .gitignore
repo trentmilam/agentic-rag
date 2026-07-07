@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+# RAGpack local artifacts
+ragpack_qdrant/
+data/
+*.onnx
+# Cloudflare Wrangler local cache (holds account id / auth state)
+.wrangler/
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
