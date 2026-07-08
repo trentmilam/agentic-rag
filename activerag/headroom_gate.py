@@ -32,7 +32,7 @@ the hunt?" So the ``Decision`` is mapped to a plain ``may_hunt`` boolean: only
 ``ALLOW`` permits the hunt now; ``DEFER`` ("cool down / evict KV first") and
 ``DENY`` ("answer with what you have") both mean *not now*.
 
-``Decision``, ``GpuProfile``, ``FRAGILE_3090`` and ``ROOMY_5090`` are re-exported
+``Decision``, ``GpuProfile``, ``CARD_A`` and ``CARD_B`` are re-exported
 from this module so a caller can drive the gate without repeating the
 sibling-path import itself.
 """
@@ -47,8 +47,8 @@ add_sibling_paths()
 # Reused wholesale from the sibling repo -- no re-implementation. (E402: the
 # sibling path must be on sys.path first, hence the import follows the call.)
 from headroom import (  # noqa: E402
-    FRAGILE_3090,
-    ROOMY_5090,
+    CARD_A,
+    CARD_B,
     SEED,
     Decision,
     GpuProfile,
@@ -61,13 +61,13 @@ __all__ = [
     "HuntDecision",
     "HuntHeadroomGate",
     "evaluate_simulated",
-    "SIM_HEALTHY_5090",
-    "SIM_NEAR_WEDGE_3090",
+    "SIM_HEALTHY_ROOMY",
+    "SIM_NEAR_WEDGE_TIGHT",
     # re-exported from headroom for caller convenience
     "Decision",
     "GpuProfile",
-    "FRAGILE_3090",
-    "ROOMY_5090",
+    "CARD_A",
+    "CARD_B",
 ]
 
 
@@ -77,24 +77,27 @@ __all__ = [
 # NOT real measurements -- there is no nvidia-smi/pynvml anywhere in activerag.
 # They exist so activerag has honest, reproducible inputs to demonstrate and
 # test the gate against, in the same explicitly-simulated spirit as
-# rag-reliability/headroom's own reference trajectories.
+# rag-reliability/headroom's own reference trajectories. The numbers are sized to
+# headroom's two illustrative reference profiles: CARD_B (the roomier 24 GB
+# example) and CARD_A (the tighter 16 GB / lower-margin example).
 
-# A roomy 5090 mid-run: cool, lots of VRAM headroom, well inside the latency
-# budget -- the gate should ALLOW another hop.
-SIM_HEALTHY_5090 = [
+# A roomy card (CARD_B) mid-run: cool, plenty of VRAM headroom, well inside the
+# latency budget -- the gate should ALLOW another hop.
+SIM_HEALTHY_ROOMY = [
     (12000.0, 55.0, 800.0),
     (12500.0, 56.0, 820.0),
     (13000.0, 57.0, 840.0),
 ]
 
-# A fragile 3090 climbing toward its ~22 GiB wedge point and 83C abort line:
-# VRAM rising ~2 GB/hop, temperature rising ~5C/hop. By the last hop the
-# observed VRAM is already inside the governor's safety margin of the ceiling --
-# the gate should refuse to escalate.
-SIM_NEAR_WEDGE_3090 = [
-    (18000.0, 72.0, 1200.0),
-    (20200.0, 77.0, 1350.0),
-    (21800.0, 80.0, 1500.0),
+# A tight-margin card (CARD_A) climbing toward its 15 GB ceiling and 90C abort
+# line: VRAM rising ~1.3 GB/hop, temperature ~4C/hop. Stop at hop 2 and the next
+# hop is predicted into the governor's DEFER band (evict/cool first); run the
+# full schedule and by hop 3 the observed VRAM is already inside the safety
+# margin of the ceiling, so the gate DENIES another hop.
+SIM_NEAR_WEDGE_TIGHT = [
+    (11500.0, 78.0, 1200.0),
+    (12800.0, 82.0, 1300.0),
+    (14100.0, 86.0, 1400.0),
 ]
 
 
@@ -119,7 +122,7 @@ class HuntHeadroomGate:
     surfaces the governor's own audited reason string.
     """
 
-    def __init__(self, profile: GpuProfile = FRAGILE_3090) -> None:
+    def __init__(self, profile: GpuProfile = CARD_A) -> None:
         self.profile = profile
         self._governor = Headroom(profile)
         self._hops_observed = 0
@@ -146,7 +149,7 @@ class HuntHeadroomGate:
 def evaluate_simulated(
     schedule,
     *,
-    profile: GpuProfile = FRAGILE_3090,
+    profile: GpuProfile = CARD_A,
     hops_completed: int | None = None,
     seed: int = SEED,
 ) -> HuntDecision:

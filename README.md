@@ -13,19 +13,26 @@ that answer is trustworthy enough to ship, or thin enough to warrant hunting for
 evidence -- against the real, 321k-chunk IETF RFC corpus the sibling repo
 [agentic-rag](https://github.com/trentmilam/agentic-rag) ingests.
 
-## Requires the rag-reliability sibling
+## Requires two sibling repos
 
-`activerag/headroom_gate.py` reuses the `Headroom` / `GpuProfile` / `Decision` governor from
-[rag-reliability](https://github.com/trentmilam/rag-reliability)'s `headroom` module, imported
-by `sys.path` -- not pip-installed or vendored. Clone rag-reliability next to this repo:
+`activerag` imports two sibling repos by `sys.path` -- not pip-installed or vendored:
+
+- `activerag/headroom_gate.py` reuses the `Headroom` / `GpuProfile` / `Decision` governor
+  from [rag-reliability](https://github.com/trentmilam/rag-reliability)'s `headroom` module.
+- `activerag/registry_bridge.py` and `refresh_hook.py` reuse
+  [agentic-rag](https://github.com/trentmilam/agentic-rag)'s `bootstrap.build_registry`.
+
+Clone both next to this repo so they sit side by side:
 
 ```
 git clone https://github.com/trentmilam/rag-reliability
+git clone https://github.com/trentmilam/agentic-rag
 ```
 
-so `activerag/` and `rag-reliability/` sit side by side; `activerag/_paths.py` resolves
-`../rag-reliability/headroom` from there. The test suite itself needs no sibling -- every
-test builds its fixtures by hand -- but a real `headroom_gate` run does.
+`activerag/_paths.py` resolves `../rag-reliability/headroom`, and `registry_bridge.py` adds
+`../agentic-rag` to the path itself. The tests build every fixture by hand and touch no live
+service, GPU, or network, but they do import these sibling modules, so both repos must be on
+the path for the suite to collect.
 
 ## What's here
 
@@ -44,8 +51,8 @@ test builds its fixtures by hand -- but a real `headroom_gate` run does.
 - `activerag/headroom_gate.py` -- `HuntHeadroomGate` / `evaluate_simulated()`: a thin
   adapter over the REAL `Headroom` / `GpuProfile` / `Decision` governor from the sibling
   repo `rag-reliability` (`headroom/headroom.py`), reused wholesale, not reimplemented.
-  Only the fed telemetry is simulated (clearly labelled `SIM_HEALTHY_5090` /
-  `SIM_NEAR_WEDGE_3090`) -- there is no `nvidia-smi`/`pynvml` call anywhere in this repo.
+  Only the fed telemetry is simulated (clearly labelled `SIM_HEALTHY_ROOMY` /
+  `SIM_NEAR_WEDGE_TIGHT`) -- there is no `nvidia-smi`/`pynvml` call anywhere in this repo.
 - `activerag/registry_bridge.py` -- `RegistryBridge`: holds one live agentic-rag
   `consilium.registry.Registry` and knows how to rebuild + wholesale-swap it
   (`refresh_all()`), reusing agentic-rag's own `bootstrap.build_registry` as the injected
