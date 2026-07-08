@@ -4,13 +4,28 @@ This is Trenton Milam's own standalone portfolio work.
 
 `activerag` is the Consilium-aware half of a "detect thin evidence, hunt for more, retry
 once, audit the result" mechanism. A generic, domain-agnostic version of the same idea
-already lives in the sibling repo `RAGpack` (`ragpack.evidence.evaluate_evidence` /
-`RAGpack.ingest_and_retry`), which judges a flat list of raw retrieval hits. `activerag`
-sits one level higher: it reads the richer post-integrity-gate signals a
-[Consilium](../consilium) `Answer` + `RouteResult` already carry (citations, dropped
-claims, router margin) and decides whether that answer is trustworthy enough to ship, or
-thin enough to warrant hunting for more evidence -- against the real, 321k-chunk IETF RFC
-corpus the sibling repo [agentic-rag](../agentic-rag) ingests.
+already lives in the sibling repo [RAGpack](https://github.com/trentmilam/RAGpack)
+(`ragpack.evidence.evaluate_evidence` / `RAGpack.ingest_and_retry`), which judges a flat
+list of raw retrieval hits. `activerag` sits one level higher: it reads the richer
+post-integrity-gate signals a [Consilium](https://github.com/trentmilam/consilium) `Answer`
++ `RouteResult` already carry (citations, dropped claims, router margin) and decides whether
+that answer is trustworthy enough to ship, or thin enough to warrant hunting for more
+evidence -- against the real, 321k-chunk IETF RFC corpus the sibling repo
+[agentic-rag](https://github.com/trentmilam/agentic-rag) ingests.
+
+## Requires the rag-reliability sibling
+
+`activerag/headroom_gate.py` reuses the `Headroom` / `GpuProfile` / `Decision` governor from
+[rag-reliability](https://github.com/trentmilam/rag-reliability)'s `headroom` module, imported
+by `sys.path` -- not pip-installed or vendored. Clone rag-reliability next to this repo:
+
+```
+git clone https://github.com/trentmilam/rag-reliability
+```
+
+so `activerag/` and `rag-reliability/` sit side by side; `activerag/_paths.py` resolves
+`../rag-reliability/headroom` from there. The test suite itself needs no sibling -- every
+test builds its fixtures by hand -- but a real `headroom_gate` run does.
 
 ## What's here
 
