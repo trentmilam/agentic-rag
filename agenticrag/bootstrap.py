@@ -149,7 +149,7 @@ def build_registry(embedder, client=None) -> Registry:
     The 4 retrieval modules are :class:`~agenticrag.qdrant_retrieval.QdrantModule`s:
     they do NOT scroll the corpus into memory. Each answers the router's best-chunk
     signal and the composer's top-k retrieval with a live Qdrant vector search
-    (local-mode brute-force, but ~30x the old pure-Python per-chunk scan and only
+    (local-mode brute-force, but ~16x the old pure-Python per-chunk scan and only
     the top-k materialized). Only the few hundred salient-value chunks are loaded
     once, for exact poison-quarantine (see ``qdrant_retrieval``). The 5th module is
     the in-process ``SupersessionModule``.

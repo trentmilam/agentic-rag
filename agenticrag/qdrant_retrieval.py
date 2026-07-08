@@ -12,7 +12,7 @@ consilium's Router scoring formula, floor/anchor logic, composer, integrity gate
 and hardening unchanged.
 
 Note on Qdrant local mode: it is an exact brute-force search (no ANN index), so a
-search still scans the filtered subset -- but in optimized native code, ~30x
+search still scans the filtered subset -- but in optimized native code, ~16x
 faster than the pure-Python loop, and only the top-k are materialized. Sub-ms
 search would require Qdrant server mode (HNSW); local mode keeps the repo
 self-contained (no server to run) at ~seconds per search.
