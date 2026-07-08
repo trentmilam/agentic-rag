@@ -27,10 +27,14 @@ ragpack search "how does the retry logic work?" --qdrant ./data
 
 ## Install
 
+Not yet on PyPI (the name `ragpack` there is an unrelated project), so install from source:
+
 ```bash
-pip install RAGpack          # CPU
-pip install "RAGpack[gpu]"   # CUDA embeddings (fastembed-gpu + onnxruntime-gpu)
-pip install "RAGpack[ocr]"   # + GPU OCR for scanned PDFs (docTR, uses CUDA when PyTorch sees a GPU)
+git clone https://github.com/trentmilam/RAGpack
+cd RAGpack
+pip install -e .             # CPU
+pip install -e ".[gpu]"     # CUDA embeddings (fastembed-gpu + onnxruntime-gpu)
+pip install -e ".[ocr]"     # + GPU OCR for scanned PDFs (docTR, uses CUDA when a CUDA PyTorch build is present)
 ```
 
 ## CPU or GPU — one switch
