@@ -9,12 +9,38 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 from ragpack.pipeline import Settings
 
 AGENTIC_RAG_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = AGENTIC_RAG_ROOT / "data"
+
+
+def _register_cuda_dll_dirs() -> None:
+    """Windows only. onnxruntime-gpu 1.27.0 is built against CUDA 13.0 and looks for the
+    CUDA/cuDNN DLLs under the pre-CUDA-13 per-component pip layout
+    (``site-packages/nvidia/cublas/bin/...``, .../cuda_runtime/bin/..., .../cufft/bin/...).
+    The nvidia-cublas / nvidia-cuda-runtime / nvidia-cufft wheels that actually ship CUDA 13
+    content install under the unified ``site-packages/nvidia/cu13/bin/x86_64/`` layout
+    instead, so onnxruntime can't find them and CUDAExecutionProvider silently fails to load
+    (fastembed then falls back to CPU with no error, only a warning). Prepending both
+    possible DLL directories to PATH lets Windows find the DLLs regardless of which layout
+    is present; a no-op if the GPU extras (or CUDA build) aren't installed. (Registering the
+    same directories via ``os.add_dll_directory`` instead was tried first and does NOT work
+    here -- onnxruntime's CUDA provider bridge only picks up dependent DLLs that are on PATH.)
+    """
+    if sys.platform != "win32":
+        return
+    site_packages = Path(sys.executable).resolve().parent.parent / "Lib" / "site-packages"
+    dirs = [site_packages / rel for rel in ("nvidia/cu13/bin/x86_64", "nvidia/cudnn/bin")]
+    found = [str(d) for d in dirs if d.is_dir()]
+    if found:
+        os.environ["PATH"] = os.pathsep.join(found) + os.pathsep + os.environ.get("PATH", "")
+
+
+_register_cuda_dll_dirs()
 
 
 def _normalize_qdrant(qdrant: str) -> str:

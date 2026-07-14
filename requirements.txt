@@ -33,11 +33,28 @@ onnxruntime==1.27.0
 #
 # GPU opt-in (CUDA-accelerated ingest -- the build this release was live-verified on):
 # replace the two CPU lines directly above with the GPU builds below, and make sure the
-# CUDA 12 + cuDNN 9 runtime libraries are reachable on PATH (a system CUDA install, the
-# nvidia-cuda-runtime-cu12 + nvidia-cudnn-cu12 wheels, or a torch GPU build). Same versions,
-# identical model + code path -- only the ONNX Runtime execution provider changes
-# (RAGpack.resolve_device: auto -> cuda, with CPUExecutionProvider kept as the in-session
-# fallback). If the CUDA libraries are absent, ONNX Runtime prints a one-line provider
-# warning and falls back to CPU; it does not crash.
+# CUDA 13 + cuDNN 9 runtime libraries are reachable (onnxruntime-gpu 1.27.0 is built
+# against CUDA 13.0 -- confirmed via `onnxruntime.cuda_version`, and its own runtime error
+# is explicit: "Require cuDNN 9.* and CUDA 13.*"). Same versions, identical model + code
+# path -- only the ONNX Runtime execution provider changes (RAGpack.resolve_device:
+# auto -> cuda, with CPUExecutionProvider kept as the in-session fallback). If the CUDA
+# libraries are absent, ONNX Runtime prints a one-line provider warning and falls back to
+# CPU; it does not crash.
 #   fastembed-gpu==0.8.0
 #   onnxruntime-gpu==1.27.0
+#
+# The CUDA 13 runtime itself, as separate pip wheels (no system CUDA install needed).
+# NOTE: nvidia's CUDA-13-era packages dropped the old `-cu13` suffix for cublas/cuda-runtime/
+# cufft (those suffixed names are now empty deprecation stubs on PyPI -- `nvidia-cudnn-cu13`
+# is the one exception, still suffixed). Pin exactly this set; a fresh `pip install` of the
+# wrong/old names silently gets a stub package that does nothing:
+#   nvidia-cublas==13.3.0.5
+#   nvidia-cuda-runtime==13.3.29
+#   nvidia-cufft==12.3.0.29
+#   nvidia-cudnn-cu13==9.24.0.43
+#
+# These pip wheels also ship under a DIFFERENT on-disk layout than onnxruntime-gpu 1.27.0's
+# own DLL search code expects (nvidia/cu13/bin/x86_64/ instead of the old nvidia/<pkg>/bin/),
+# so onnxruntime can't find them on its own -- agenticrag/embed_config.py registers both
+# possible DLL directories on PATH at import time to cover it; no extra setup needed beyond
+# `pip install`.
