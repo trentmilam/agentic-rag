@@ -10,6 +10,10 @@
 # Verified this release against: RAGpack@a0078fb, consilium@5228cbb, linkgraph@46bdd04.
 # Re-clone the siblings adjacent to this repo under the same parent directory.
 
+# --- test suite (tests/, agenticrag/mcp/, eval/ -- what scripts/verify.py and CI's
+# "Quick verify" step run via `pytest -q`; not needed to run app.py/run_demo.py) ---
+pytest==9.1.1
+
 # --- corpus fetch (corpus_fetch/, real HTTPS to rfc-editor.org / iana.org) ---
 requests==2.34.2
 
