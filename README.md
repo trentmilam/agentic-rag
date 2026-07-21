@@ -13,26 +13,29 @@ that answer is trustworthy enough to ship, or thin enough to warrant hunting for
 evidence -- against the real, 321k-chunk IETF RFC corpus the sibling repo
 [agentic-rag](https://github.com/trentmilam/agentic-rag) ingests.
 
-## Requires two sibling repos
+## Sibling repos
 
 `activerag` imports two sibling repos by `sys.path` -- not pip-installed or vendored:
 
-- `activerag/headroom_gate.py` reuses the `Headroom` / `GpuProfile` / `Decision` governor
-  from [rag-reliability](https://github.com/trentmilam/rag-reliability)'s `headroom` module.
 - `activerag/registry_bridge.py` and `refresh_hook.py` reuse
   [agentic-rag](https://github.com/trentmilam/agentic-rag)'s `bootstrap.build_registry`.
+  Clone it next to this repo:
 
-Clone both next to this repo so they sit side by side:
+  ```
+  git clone https://github.com/trentmilam/agentic-rag
+  ```
 
-```
-git clone https://github.com/trentmilam/rag-reliability
-git clone https://github.com/trentmilam/agentic-rag
-```
+- `activerag/headroom_gate.py` reuses the `Headroom` / `GpuProfile` / `Decision` governor
+  from `rag-reliability`'s `headroom` flat module. **That repo is not published yet.**
+  Without it, `activerag/headroom_gate.py` is the one module that will not import; the
+  other seven are unaffected.
 
 `activerag/_paths.py` resolves `../rag-reliability/headroom`, and `registry_bridge.py` adds
-`../agentic-rag` to the path itself. The tests build every fixture by hand and touch no live
-service, GPU, or network, but they do import these sibling modules, so both repos must be on
-the path for the suite to collect.
+`../agentic-rag` to the path itself.
+
+The tests build every fixture by hand and touch no live service, GPU, or network. 39 of the
+53 run with no sibling repo present at all; the 14 in `test_headroom_gate.py` and
+`test_orchestrator.py` import the `headroom` governor and skip cleanly when it is absent.
 
 ## What's here
 
@@ -56,10 +59,24 @@ the path for the suite to collect.
 - `activerag/registry_bridge.py` -- `RegistryBridge`: holds one live agentic-rag
   `consilium.registry.Registry` and knows how to rebuild + wholesale-swap it
   (`refresh_all()`), reusing agentic-rag's own `bootstrap.build_registry` as the injected
-  builder. **Live-verified** against the real 321,124-chunk Qdrant collection:
-  construction and a second `refresh_all()` each really rebuild the registry (measured
-  ~194s per build on this hardware -- see `agenticrag/registry_loader.py`'s own scan-cost
-  note), producing a genuinely new object each time, not a mutation.
+  builder. Verified against the real 321,124-chunk Qdrant collection: construction and a
+  second `refresh_all()` each really rebuild the registry, producing a genuinely new object
+  each time, not a mutation. This is the exact same `build_registry()` cost agentic-rag's own
+  README documents -- a scan for the small poison-quarantine set via
+  `agenticrag/qdrant_retrieval.py::load_salient_chunks_by_source` -- **not**
+  `agenticrag/registry_loader.py::load_module_from_qdrant`'s much costlier full-module
+  scroll (that function is only used by `eval/prove_revision_guard.py`; this bridge never
+  calls it). Measured (CPU-only, no CUDA execution provider; 3 consecutive `build_registry()`
+  calls, not isolated from background load): **~35s/build** when the bridge is constructed
+  with an explicit shared `client=` kwarg (the client stays open, so a rebuild skips
+  re-opening the on-disk store); **~78-104s/build** when no client is passed (plain
+  `RegistryBridge(embedder)`), because every `build_registry()` call then opens its own fresh
+  `QdrantClient`. The no-client mode also has a sharp edge worth knowing before relying on it:
+  local-mode Qdrant allows only one opener per folder and `build_registry` never closes a
+  client it opened on success, so calling `refresh_all()` a second time on a bridge built
+  *without* a shared client raises `RuntimeError: Storage folder ... already accessed by
+  another instance` -- pass `client=get_qdrant_client()` explicitly if a process needs more
+  than one rebuild.
 - `activerag/orchestrator.py` -- `run_hunt_cycle()` / `OrchestrationResult`: the conductor.
   Evaluates existing evidence; if sufficient, short-circuits (no ranking, no hunt, no
   telemetry). Otherwise ranks candidate sources and tries each in priority order, bounded

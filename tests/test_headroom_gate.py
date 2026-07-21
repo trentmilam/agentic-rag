@@ -8,7 +8,17 @@ sibling-path import of the ``headroom`` flat module (via activerag._paths).
 """
 from __future__ import annotations
 
-from activerag.headroom_gate import (
+import pytest
+
+# The sibling `headroom` module is the one thing here that is not self-contained. Without this,
+# its absence is a COLLECTION error, and pytest aborts the whole run -- so a missing sibling
+# takes down all 53 tests rather than the 8 that actually need it.
+pytest.importorskip(
+    "activerag.headroom_gate",
+    reason="needs the sibling rag-reliability/headroom module on sys.path",
+)
+
+from activerag.headroom_gate import (  # noqa: E402
     CARD_A,
     CARD_B,
     SIM_HEALTHY_ROOMY,

@@ -16,10 +16,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from activerag.evidence import EvidenceVerdict
-from activerag.headroom_gate import Decision, HuntDecision
-from activerag.orchestrator import run_hunt_cycle
-from activerag.telemetry import read_events
+import pytest
+
+# `orchestrator` itself deliberately does not import `headroom_gate` (see the note at
+# orchestrator.py:80) -- only this test does, for the real Decision/HuntDecision. Skip rather
+# than fail collection so a missing sibling repo does not abort the entire suite.
+pytest.importorskip(
+    "activerag.headroom_gate",
+    reason="needs the sibling rag-reliability/headroom module on sys.path",
+)
+
+from activerag.evidence import EvidenceVerdict  # noqa: E402
+from activerag.headroom_gate import Decision, HuntDecision  # noqa: E402
+from activerag.orchestrator import run_hunt_cycle  # noqa: E402
+from activerag.telemetry import read_events  # noqa: E402
 
 
 # --- fixtures mirroring consilium.composer.Answer / consilium.router.RouteResult
