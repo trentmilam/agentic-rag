@@ -16,6 +16,7 @@ import hashlib
 import json
 import shutil
 import sys
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -41,6 +42,11 @@ CONNECTORS = {
     "errata": errata,
     "iana_registry": iana_registry,
 }
+
+# The embed/upsert loop is the heavy step (minutes on a small corpus, hours on the
+# full 321k-chunk one) with no other output of its own -- print a heartbeat at most
+# this often so a long run reads as progress, not a hang.
+_PROGRESS_INTERVAL_SECS = 15
 
 
 @dataclass
@@ -136,6 +142,13 @@ def run(*, recreate: bool = False, data_dir: Path | None = None) -> IngestReport
     # this set compares equal to the forward-slash-normalized `rel` keys below.
     changed = {str(p).replace("\\", "/") for p in changed_files(hashes, old_state)}
 
+    print(
+        f"ingest: {len(all_files)} files found, {len(changed)} changed since last run "
+        f"({len(all_files) - len(changed)} unchanged, skipped) -- chunking+embedding the "
+        "changed set now",
+        flush=True,
+    )
+
     if recreate:
         _force_clear_local_collection()
 
@@ -155,6 +168,7 @@ def run(*, recreate: bool = False, data_dir: Path | None = None) -> IngestReport
     total_chunks = 0
     files_processed = 0
     files_skipped = 0
+    last_progress = time.monotonic()
 
     for source_type, path in all_files:
         rel = str(path.relative_to(data_dir)).replace("\\", "/")
@@ -194,6 +208,15 @@ def run(*, recreate: bool = False, data_dir: Path | None = None) -> IngestReport
             batch_payloads = payloads[start:start + SETTINGS.batch_size]
             vectors = embedder.embed(batch_texts)
             upsert(client, SETTINGS.collection, batch_ids, vectors, batch_payloads)
+
+            now = time.monotonic()
+            if now - last_progress >= _PROGRESS_INTERVAL_SECS:
+                print(
+                    f"  ... {files_processed}/{len(changed)} changed files, "
+                    f"{total_chunks + start + len(batch_ids)} chunks embedded so far",
+                    flush=True,
+                )
+                last_progress = now
 
         doc_reports.append(DocReport(doc_id=doc.doc_id, source_type=source_type, n_chunks=len(chunks)))
         total_chunks += len(chunks)

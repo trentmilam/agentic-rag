@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- `ingest/run_ingest.py` now prints progress: a start line (files found / changed
+  since last run), a heartbeat at most every 15s during the embed/upsert loop, and
+  the existing final JSON summary, unchanged. Previously the whole run — minutes on
+  a small corpus, hours on the full 321,124-chunk one — produced zero stdout, which
+  a fresh-clone smoke test read as a hang.
+
 ## [0.1.1]
 
 - Re-pin the linkgraph and RAGpack sibling checkouts (README quickstart,
