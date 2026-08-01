@@ -37,14 +37,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: trentmilam/linkgraph
-          ref: 46bdd04d2dd9eed57cb5af0d26bbd33468264eb8
+          ref: 61a08d278029fa962397d072f7ab84b9e347b1d7
           path: linkgraph
 
       - name: Check out RAGpack (verified sibling)
         uses: actions/checkout@v4
         with:
           repository: trentmilam/RAGpack
-          ref: a0078fb12608da6f7900b116167ddfa6efa77775
+          ref: 681c0187012a38339c14b519b9ccacf9fd801c0c
           path: RAGpack
 
       - name: Set up Python 3.12

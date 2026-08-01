@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1]
+
+- Re-pin the linkgraph and RAGpack sibling checkouts (README quickstart,
+  `requirements.txt`, CI) to currently-reachable commits. The previous pins were
+  orphaned by a history rewrite in those repos, so a fresh clone's verbatim
+  quickstart failed at `git checkout` — while CI stayed green, because
+  `actions/checkout` fetches orphaned commits by exact SHA where a plain clone
+  cannot. The pinned-to-tip diffs are docs/CI-only in both siblings.
+
 ## [0.1.0] — Initial public release
 
 First public release: cited, revision-aware retrieval over a real 321,124-chunk

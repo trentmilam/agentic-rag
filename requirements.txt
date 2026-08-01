@@ -7,7 +7,7 @@
 #   RAGpack   -- the ingest/chunk/embed/store engine; pip-installed editable:  pip install -e ../RAGpack
 #   consilium -- routing/citation-gating/hardening spine; imported via sys.path; NOT pip-installed
 #   linkgraph -- relationship graph (MCP tools only); imported via sys.path; NOT pip-installed
-# Verified this release against: RAGpack@a0078fb, consilium@5228cbb, linkgraph@46bdd04.
+# Verified this release against: RAGpack@681c018, consilium@5228cbb, linkgraph@61a08d2.
 # Re-clone the siblings adjacent to this repo under the same parent directory.
 
 # --- test suite (tests/, agenticrag/mcp/, eval/ -- what scripts/verify.py and CI's

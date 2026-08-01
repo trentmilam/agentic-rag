@@ -34,8 +34,8 @@ parent directory, then build the corpus once:
 :: path are provably identical -- newer sibling tips may have drifted.
 git clone https://github.com/trentmilam/agentic-rag
 git clone https://github.com/trentmilam/consilium && git -C consilium checkout 5228cbb
-git clone https://github.com/trentmilam/linkgraph && git -C linkgraph checkout 46bdd04
-git clone https://github.com/trentmilam/RAGpack   && git -C RAGpack   checkout a0078fb
+git clone https://github.com/trentmilam/linkgraph && git -C linkgraph checkout 61a08d2
+git clone https://github.com/trentmilam/RAGpack   && git -C RAGpack   checkout 681c018
 
 :: 2. Create agentic-rag's venv (Python 3.12) + install its deps + RAGpack (editable):
 cd agentic-rag
@@ -97,8 +97,8 @@ loudly at import -- there is no silent degraded mode. `linkgraph`'s absence
 degrades only the MCP relationship tools (they return a documented
 `{"ok": false, "fallback": ...}` envelope), never the core answer path.
 
-Verified this release against `consilium@5228cbb`, `linkgraph@46bdd04`,
-`RAGpack@a0078fb` (see `requirements.txt`).
+Verified this release against `consilium@5228cbb`, `linkgraph@61a08d2`,
+`RAGpack@681c018` (see `requirements.txt`).
 
 ## The corpus
 
