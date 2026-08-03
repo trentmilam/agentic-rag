@@ -19,23 +19,34 @@ evidence -- against the real, 321k-chunk IETF RFC corpus the sibling repo
 
 - `activerag/registry_bridge.py` and `refresh_hook.py` reuse
   [agentic-rag](https://github.com/trentmilam/agentic-rag)'s `bootstrap.build_registry`.
-  Clone it next to this repo:
+  It is resolved lazily -- only when a `RegistryBridge` is constructed without an injected
+  `build_registry` -- so importing (or testing) these modules needs no clone at all. To
+  drive the real default builder, clone it next to this repo, along with
+  [consilium](https://github.com/trentmilam/consilium), which agentic-rag's own bootstrap
+  imports from in turn:
 
   ```
   git clone https://github.com/trentmilam/agentic-rag
+  git clone https://github.com/trentmilam/consilium
   ```
 
 - `activerag/headroom_gate.py` reuses the `Headroom` / `GpuProfile` / `Decision` governor
-  from `rag-reliability`'s `headroom` flat module. **That repo is not published yet.**
-  Without it, `activerag/headroom_gate.py` is the one module that will not import; the
-  other seven are unaffected.
+  from [rag-reliability](https://github.com/trentmilam/rag-reliability)'s `headroom` flat
+  module. Without it, `activerag/headroom_gate.py` is the one module that will not import;
+  the other seven are unaffected:
+
+  ```
+  git clone https://github.com/trentmilam/rag-reliability
+  ```
 
 `activerag/_paths.py` resolves `../rag-reliability/headroom`, and `registry_bridge.py` adds
-`../agentic-rag` to the path itself.
+`../agentic-rag` to the path itself (lazily, at first default construction).
 
 The tests build every fixture by hand and touch no live service, GPU, or network. 39 of the
-53 run with no sibling repo present at all; the 14 in `test_headroom_gate.py` and
-`test_orchestrator.py` import the `headroom` governor and skip cleanly when it is absent.
+54 run with no sibling repo present at all; the 14 in `test_headroom_gate.py` and
+`test_orchestrator.py` import the `headroom` governor and skip cleanly when it is absent,
+and the one test that resolves the real `agenticrag.bootstrap.build_registry` skips cleanly
+when the agentic-rag / consilium clones are absent.
 
 ## What's here
 
@@ -101,10 +112,9 @@ The tests build every fixture by hand and touch no live service, GPU, or network
   `RegistryBridge`/`orchestrator` already use.
 
 Every module above is independently unit-tested against hand-built fixture objects; none
-of the 53 tests in this repo touch a live Consilium instance, embedder, or real corpus --
+of the 54 tests in this repo touch a live Consilium instance, embedder, or real corpus --
 that boundary is deliberate (see `activerag/registry_bridge.py`'s and `refresh_hook.py`'s
-own docstrings for why, and what was additionally verified outside the
-committed test suite).
+own docstrings for what was additionally verified live, outside the committed test suite).
 
 ## What's explicitly NOT here
 

@@ -4,14 +4,18 @@ Hermetic: RegistryBridge is driven entirely by a hand-built FakeBuildRegistry
 that returns distinguishable fake Registry-shaped objects -- no real Qdrant,
 embedder, or agentic-rag registry is ever built or touched. The real
 ``agenticrag.bootstrap.build_registry`` function is referenced ONLY as a
-function object (to prove the injection point's default really is wired to
-it) and is never invoked -- matching the no-live-dependency style of the other
-activerag tests.
+function object (to prove the lazy default really resolves to it) and is
+never invoked -- and the one test that references it skips cleanly when the
+agentic-rag / consilium sibling clones are absent, matching the
+no-live-dependency style of the other activerag tests.
 """
 from __future__ import annotations
 
 import inspect
 
+import pytest
+
+import activerag.registry_bridge as registry_bridge_module
 from activerag.registry_bridge import RegistryBridge
 
 
@@ -42,15 +46,46 @@ class FakeBuildRegistry:
         return FakeRegistry(self._next_id, embedder, client)
 
 
-def test_default_build_registry_is_the_real_agentic_rag_bootstrap_function():
-    # The injection point defaults to the REAL agenticrag.bootstrap.build_registry.
-    # Checked via the constructor's default parameter value only -- never called,
-    # never instantiated with it -- so this proves the wiring without ever
-    # touching Qdrant.
+def test_default_build_registry_resolves_lazily_at_construction(monkeypatch):
+    # The injection point's default is None, resolved through
+    # _load_real_build_registry at CONSTRUCTION time -- never at module import
+    # (that lazy boundary is what lets this whole file collect with no sibling
+    # repo cloned). Proven hermetically: swap the loader for one that returns a
+    # fake, construct with no build_registry argument, and the loaded fake must
+    # be exactly what the bridge builds with.
+    default = inspect.signature(RegistryBridge.__init__).parameters["build_registry"].default
+    assert default is None
+
+    fake_build = FakeBuildRegistry()
+    loader_calls = []
+
+    def fake_loader():
+        loader_calls.append(True)
+        return fake_build
+
+    monkeypatch.setattr(registry_bridge_module, "_load_real_build_registry", fake_loader)
+    embedder = object()
+    bridge = RegistryBridge(embedder)
+
+    assert loader_calls == [True]
+    assert fake_build.calls == [(embedder, None)]
+    assert bridge.registry.build_id == 1
+
+
+def test_lazy_loader_resolves_the_real_agentic_rag_bootstrap_function():
+    # The lazy loader really returns the REAL agenticrag.bootstrap.build_registry
+    # -- referenced as a function object only, never called, so no Qdrant is
+    # touched. Resolving it genuinely needs the agentic-rag sibling clone (whose
+    # bootstrap in turn hard-imports from its own consilium sibling); skip
+    # cleanly when either is absent instead of failing the run.
+    try:
+        resolved = registry_bridge_module._load_real_build_registry()
+    except ModuleNotFoundError as exc:
+        pytest.skip(f"needs the agentic-rag (+ consilium) sibling clones: {exc}")
+
     from agenticrag.bootstrap import build_registry as real_build_registry
 
-    default = inspect.signature(RegistryBridge.__init__).parameters["build_registry"].default
-    assert default is real_build_registry
+    assert resolved is real_build_registry
 
 
 def test_construction_builds_the_initial_registry_via_injected_build_registry():
