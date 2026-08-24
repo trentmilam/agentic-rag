@@ -5,10 +5,23 @@ deliberately planted bad merge is correctly flagged by that same unmodified
 mechanism."""
 import copy
 
+import pytest
+
 from linkgraph import adapter
 
-from graphrx.graph import adjacency
-from graphrx.lint import high_risk, report
+# graphrx lives in the rag-reliability sibling repo, not on PyPI. Without it this
+# module used to raise at COLLECTION, which took the whole suite down on a clean
+# clone -- so `git clone && pytest` failed for anyone who had not already guessed
+# they needed a second repo. CI checks the sibling out so these tests really run
+# there; everywhere else they skip with a message that says what to clone.
+pytest.importorskip(
+    "graphrx.graph",
+    reason="needs the rag-reliability sibling: "
+           "git clone https://github.com/trentmilam/rag-reliability ../rag-reliability",
+)
+
+from graphrx.graph import adjacency  # noqa: E402
+from graphrx.lint import high_risk, report  # noqa: E402
 
 HIGH_RISK = 0.25
 

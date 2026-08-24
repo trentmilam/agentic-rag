@@ -41,11 +41,39 @@ def main() -> int:
     for edge_type in ("co_mentions", "obsoletes", "updates", "corrects"):
         print(f"  {edge_type:12s} {edge_counts.get(edge_type, 0)}")
 
-    corrects = edge_counts.get("corrects", 0)
-    ok = corrects > 0
-    print(f"\n{'OK  ' if ok else 'FAIL'} corrects_count_positive (corrects={corrects})")
-    print("\nRESULT:", "PASS" if ok else "FAIL")
-    return 0 if ok else 1
+    # Every number the README quotes is asserted here, not merely printed. Printing
+    # them let the published figures drift from what the code actually produces with
+    # nothing to catch it -- a bare `corrects > 0` passes just as happily on a graph
+    # half this size. Update these only alongside the README, and say why.
+    EXPECTED_MENTIONS = 21830
+    EXPECTED_NODES = 13666
+    EXPECTED_EDGES = 14844
+    EXPECTED_EDGE_COUNTS = {
+        "co_mentions": 5061,
+        "obsoletes": 2370,
+        "updates": 2352,
+        "corrects": 5061,
+    }
+
+    checks = [
+        ("mention_count", len(refs), EXPECTED_MENTIONS),
+        ("node_count", len(g.nodes), EXPECTED_NODES),
+        ("edge_count", len(g.edges), EXPECTED_EDGES),
+    ] + [
+        (f"edge_type_{name}", edge_counts.get(name, 0), expected)
+        for name, expected in EXPECTED_EDGE_COUNTS.items()
+    ]
+
+    print()
+    failed = 0
+    for name, actual, expected in checks:
+        good = actual == expected
+        failed += not good
+        suffix = "" if good else f"  (README publishes {expected})"
+        print(f"{'OK  ' if good else 'FAIL'} {name} = {actual}{suffix}")
+
+    print("\nRESULT:", "PASS" if not failed else f"FAIL ({failed} of {len(checks)})")
+    return 0 if not failed else 1
 
 
 if __name__ == "__main__":
