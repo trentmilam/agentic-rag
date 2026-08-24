@@ -22,18 +22,13 @@ importing (or test-collecting) this module require TWO extra sibling clones.
 Lazily, a consumer that injects its own builder -- every test in this repo
 does -- needs neither.
 
-``activerag._paths`` only lists the sibling paths ``activerag.headroom_gate``
-needs (``ACTIVERAG_ROOT``, the flat ``headroom`` module dir) -- it doesn't
-know about ``agentic-rag`` at all, and widening that shared file for a need
-only THIS module has would be a bigger change than necessary. So
-:func:`_load_real_build_registry` adds the one further sibling root it needs,
-``agentic-rag`` itself, using the already-public ``PROJECTS_ROOT`` constant
-``_paths.py`` exports -- the same "insert at the front of sys.path if not
-already present" idiom every ``_paths.py`` in this ``projects/`` tree uses.
-Once ``agentic-rag`` is on ``sys.path``, ``agenticrag/bootstrap.py``'s OWN
-``add_sibling_paths()`` call (inside that module, using ``agenticrag._paths``)
-puts ``consilium`` on ``sys.path`` before its own ``consilium`` imports run --
-so this module never needs to add ``consilium`` itself.
+``agenticrag`` used to be a separate repository beside this one, so this module
+put that sibling checkout at the FRONT of ``sys.path`` before importing from it.
+It is a package of this same repository now, mapped by the root
+``pyproject.toml`` and importable after ``pip install -e .``, so the path insert
+is gone. It was worse than redundant: a stale ``agentic-rag`` directory anywhere
+beside this repo would have shadowed the real ``agenticrag`` and every test would
+still have passed.
 
 Note the lazy resolution still only imports the ``build_registry`` FUNCTION.
 ``agenticrag.bootstrap``'s own top-level imports are all dependency-light
@@ -72,11 +67,9 @@ process.
 """
 from __future__ import annotations
 
-import os
-import sys
 from typing import TYPE_CHECKING, Callable
 
-from activerag._paths import PROJECTS_ROOT, add_sibling_paths
+from activerag._paths import add_sibling_paths
 
 add_sibling_paths()
 
@@ -99,15 +92,9 @@ def _load_real_build_registry() -> "BuildRegistry":
     Called only when a :class:`RegistryBridge` is constructed WITHOUT an
     injected ``build_registry`` -- never at module import time (see the module
     docstring's "Lazy sibling bootstrap" section for why that boundary
-    matters). activerag._paths doesn't know about agentic-rag, so this adds
-    that one further sibling root itself, same idiom every _paths.py in this
-    projects/ tree uses: insert at the front, skip if already present.
-    Resolving the function opens no Qdrant client; only calling it does.
+    matters). Resolving the function opens no Qdrant client; only calling it
+    does.
     """
-    agentic_rag_root = os.path.join(PROJECTS_ROOT, "agentic-rag")
-    if agentic_rag_root not in sys.path:
-        sys.path.insert(0, agentic_rag_root)
-
     from agenticrag.bootstrap import build_registry
 
     return build_registry

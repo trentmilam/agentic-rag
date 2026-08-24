@@ -1,83 +1,74 @@
 """pytest collection bootstrap.
 
-Makes agentic-rag and its sibling repos importable for the whole test session,
-regardless of test order or which subset is selected. Without this,
-``pytest eval/test_supersession_cycle_safety.py`` on its own fails to collect
-(``ModuleNotFoundError: No module named 'consilium'``): that test file only adds
-the repo root to ``sys.path``, and the ``consilium`` import it transitively needs
-happens to be satisfied only because another test collected earlier already ran
-``add_sibling_paths()``. Doing it here, at the pytest rootdir, makes every clone
-collect identically no matter what is run.
+Puts the repo root on ``sys.path`` so ``agenticrag`` / ``corpus_fetch`` / ``ingest``
+import without an install, and fails with a useful message rather than a bare
+``ModuleNotFoundError`` if the merged packages under ``packages/`` are not installed.
 
-Paired with ``pyproject.toml``'s ``[tool.pytest.ini_options]`` (which pins the
-rootdir to this repo) so pytest never inherits an unrelated ancestor directory's
-pytest config on a different machine.
+This file used to do considerably more. agentic-rag imported ``consilium`` and
+``linkgraph`` from sibling repositories by inserting their roots on ``sys.path``, and
+required ``RAGpack`` pip-installed editable from a third. Those repos now live under
+``packages/`` here, mapped to their import names by ``pyproject.toml``'s
+``package-dir``, so ``pip install -e .`` is the whole bootstrap and there is no
+sibling layout to get wrong.
+
+Paired with ``pyproject.toml``'s ``[tool.pytest.ini_options]`` (which pins the rootdir
+to this repo) so pytest never inherits an unrelated ancestor directory's pytest config
+on a different machine.
 """
+import importlib.util
 import os
 import sys
+
+import pytest
 
 _REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from agenticrag._paths import add_sibling_paths  # noqa: E402
-
-add_sibling_paths()
-
-
-# ---------------------------------------------------------------------------
-# Clean-clone guard.
-#
-# agentic-rag is not standalone: it imports the consilium and linkgraph sibling
-# repos via sys.path and installs RAGpack editable (see the README "Honest
-# scope"). With none of those present -- which is what `git clone && pytest`
-# gives you, the first thing anyone tries -- four test modules used to raise
-# during COLLECTION, so pytest aborted before running a single test and the
-# only output was a ModuleNotFoundError traceback.
-#
-# Skipping them instead lets the corpus-free suite run and prints exactly what
-# is missing and why. CI installs the real siblings, so nothing is skipped
-# there and the integration stays genuinely covered.
-# ---------------------------------------------------------------------------
-import importlib.util  # noqa: E402
-
-_SIBLING_DEPENDENT = {
-    "tests/test_bootstrap.py": ("ragpack", "consilium"),
-    "tests/test_qdrant_retrieval.py": ("consilium",),
-    "tests/test_registry_loader.py": ("consilium",),
-    "eval/test_supersession_cycle_safety.py": ("consilium",),
-    "agenticrag/mcp/test_server.py": ("consilium",),
-}
-
-_CLONE_HINT = {
-    "consilium": "git clone https://github.com/trentmilam/consilium ../consilium",
-    "linkgraph": "git clone https://github.com/trentmilam/linkgraph ../linkgraph",
-    "ragpack": "git clone https://github.com/trentmilam/RAGpack ../RAGpack "
-               "&& pip install -e ../RAGpack",
-}
+# Every package that lives under packages/ and is reachable only via the editable
+# install. A missing one means `pip install -e .` has not been run -- say so once,
+# clearly, instead of letting each test module raise its own ModuleNotFoundError.
+_MERGED = ("consilium", "ragpack", "linkgraph", "activerag", "chainrag")
 
 
-def _missing(mod: str) -> bool:
+def _diagnose(name: str) -> str:
+    """Return "" if ``name`` resolves to a real package inside THIS repository, or a
+    description of what is wrong otherwise.
+
+    Two distinct failures, both of which produce a green test run against code that is
+    not the code in this checkout:
+
+    * An implicit namespace package has a spec but no ``origin`` -- what a bare
+      directory of the same name produces. This repo hit exactly that when the merged
+      packages sat at the top level and shadowed themselves.
+    * A spec whose ``origin`` points somewhere else -- a leftover editable install still
+      aimed at the old separate repository next door. That one is worse: it is a real,
+      importable, plausible-looking package, so the suite passes green against source
+      that is not the source being edited. It is how this repo's own first post-merge
+      run was measured, against the ragpack checkout one directory over.
+    """
     try:
-        return importlib.util.find_spec(mod) is None
+        spec = importlib.util.find_spec(name)
     except (ImportError, ValueError):
-        return True
+        return "not importable"
+    if spec is None:
+        return "not importable"
+    if spec.origin is None:
+        return "resolves to a namespace package (a bare directory is shadowing it)"
+    origin = os.path.abspath(spec.origin)
+    if not origin.startswith(_REPO_ROOT + os.sep):
+        return "resolves OUTSIDE this repo, to " + origin
+    return ""
 
 
-collect_ignore = []
-_absent = set()
-for _path, _needs in _SIBLING_DEPENDENT.items():
-    _gone = [m for m in _needs if _missing(m)]
-    if _gone:
-        collect_ignore.append(_path)
-        _absent.update(_gone)
-
-if _absent:
-    print(
-        "\n[agentic-rag] skipping "
-        + f"{len(collect_ignore)} sibling-dependent test module(s); missing: "
-        + ", ".join(sorted(_absent))
-        + "\n[agentic-rag] to run them:\n    "
-        + "\n    ".join(_CLONE_HINT[m] for m in sorted(_absent))
-        + "\n"
+_broken = [(n, why) for n in _MERGED for why in (_diagnose(n),) if why]
+if _broken:
+    pytest.exit(
+        "the merged packages under packages/ are not resolving to this checkout:\n"
+        + "\n".join("  {}: {}".format(n, why) for n, why in _broken)
+        + "\nIf any of those name an old sibling checkout, uninstall it first"
+          " (`pip uninstall -y " + " ".join(n for n, _ in _broken) + "`), then run"
+          " `pip install -e .` from the repo root -- pyproject.toml maps each name"
+          " into packages/.",
+        returncode=4,
     )

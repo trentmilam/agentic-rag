@@ -2,9 +2,10 @@
 
 activerag reuses the ``headroom`` hardware-aware budget governor (``Headroom`` /
 ``GpuProfile`` / ``Decision``) that lives in the sibling repo ``rag-reliability``
-under the same ``projects/`` root -- its own git repo, not pip-installed. This is
-the same convention agentic-rag's ``agenticrag/_paths.py`` and linkgraph's
-``linkgraph/_paths.py`` already established for THEIR sibling repos.
+under the same ``projects/`` root -- its own git repo, not pip-installed. It is the
+LAST such dependency: consilium, ragpack, linkgraph, activerag and chainrag were all
+reached this way too and are packages of this repository now, so the only bootstrap
+left here is the one for rag-reliability.
 
 There is one structural difference from those two, and it is the whole reason
 this module exists as its own file rather than a one-liner:
@@ -37,7 +38,16 @@ import os
 import sys
 
 ACTIVERAG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECTS_ROOT = os.path.dirname(ACTIVERAG_ROOT)
+REPO_ROOT = os.path.dirname(os.path.dirname(ACTIVERAG_ROOT))
+PROJECTS_ROOT = os.path.dirname(REPO_ROOT)
+# NOTE ON DEPTH: this tool now lives at <repo>/packages/<name>/, two levels below the
+# repo root, so PROJECTS_ROOT is resolved from there rather than from a sibling-of-the
+# repo layout. consilium / ragpack / linkgraph / activerag / chainrag are NOT resolved
+# here any more -- they are packages of this repo, mapped by pyproject.toml's
+# package-dir and importable after `pip install -e .`. The only thing left below is
+# rag-reliability, which is a genuinely separate project; packaging it so it can be a
+# declared dependency instead of a path is the remaining follow-up.
+
 
 # The FLAT module directory itself (contains headroom.py directly, no
 # __init__.py) -- so ``import headroom`` resolves headroom.py, not a package.

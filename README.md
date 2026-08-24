@@ -6,9 +6,9 @@ Cited, revision-aware retrieval over a **real** corpus drawn from the IETF RFC
 ecosystem -- RFC full text, the RFC index's real Obsoletes/Obsoleted-by/Updates
 supersession graph, real community-submitted RFC errata, and real IANA
 protocol-parameter registries -- fetched over HTTPS (`corpus_fetch/`) and
-ingested through [RAGpack](https://github.com/trentmilam/RAGpack) into a
-searchable vector store (321,124 real chunks), then routed and citation-gated
-through the [consilium](https://github.com/trentmilam/consilium) spine.
+ingested through [`ragpack`](packages/ragpack) into a searchable vector store
+(321,124 real chunks), then routed and citation-gated through the
+[`consilium`](packages/consilium) spine.
 
 Ask a real question about an IETF protocol spec, an RFC's authorship/status, a
 real errata correction, or an IANA registry entry, and get back an answer built
@@ -22,83 +22,54 @@ answer path.**
 
 ## Quickstart
 
-This repo is **not standalone** -- it imports two sibling capability repos (see
-[Honest scope](#honest-scope) below). Clone all of them side-by-side under one
-parent directory, then build the corpus once:
-
 ```bat
-:: 1. Clone this repo + its siblings side-by-side (one shared parent dir):
-::      <parent>/{agentic-rag, consilium, linkgraph, RAGpack}
-:: Check each sibling out at the exact commit this release was verified against
-:: (same SHAs CI pins and requirements.txt records) so the human path and the CI
-:: path are provably identical -- newer sibling tips may have drifted.
 git clone https://github.com/trentmilam/agentic-rag
-git clone https://github.com/trentmilam/consilium && git -C consilium checkout 5228cbb
-git clone https://github.com/trentmilam/linkgraph && git -C linkgraph checkout 61a08d2
-git clone https://github.com/trentmilam/RAGpack   && git -C RAGpack   checkout 681c018
-
-:: 2. Create agentic-rag's venv (Python 3.12) + install its deps + RAGpack (editable):
 cd agentic-rag
-python -m venv .venv
+py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m pip install -e ..\RAGpack
-
-:: 3. Fetch the real corpus over HTTPS (rfc-editor.org / iana.org). Downloads a few
-::    hundred MB of text; takes a while on a home connection. Writes to data/raw/.
-.venv\Scripts\python -m corpus_fetch.fetch_all
-
-:: 4. Ingest -> chunk -> embed -> Qdrant. The heavy step: ~321k chunks embedded with
-::    BAAI/bge-base-en-v1.5. Minutes on a GPU, many hours on CPU (see "GPU note").
-::    Produces a multi-GB local Qdrant store under data/qdrant/ (both gitignored).
-.venv\Scripts\python ingest\run_ingest.py
-
-:: 5. See it run. Two costs, both on CPU and both disclosed as they happen:
-::    - registry build does a one-time ~60s scan of the corpus for the small
-::      poison-quarantine set (measured, first launch), with per-module progress;
-::    - then each distinct query takes ~12s (measured), running routing + retrieval
-::      as native Qdrant vector searches instead of a pure-Python scan -- the
-::      demo/app print a live "working..." heartbeat so this never reads as a hang.
-demo.bat      :: scripted 3-question transcript, no typing
-app.bat       :: interactive chat UI (gradio, no browser auto-launch)
+.venv\Scripts\python -m pip install -e .
+.venv\Scripts\python scripts\verify.py
 ```
 
-POSIX note: every launcher ships in both forms -- `demo.bat`/`app.bat`/`verify.bat`
-on Windows and `demo.sh`/`app.sh`/`verify.sh` on macOS/Linux (thin wrappers around
-the same `python` commands, using `.venv/bin/python`). Nothing is Windows-only
-underneath.
+That is the whole bootstrap. The editable install is what makes `import consilium`,
+`import ragpack`, `import linkgraph`, `import activerag` and `import chainrag` resolve --
+`pyproject.toml`'s `package-dir` maps each name into `packages/`.
 
-Nothing ships pre-built: `data/` (raw corpus, Qdrant store, entity index) is
-entirely gitignored, so steps 3-4 are required before any query command works.
-Skipping them and running the demo raises a clear "collection does not exist --
-build it first" error, not a raw driver stack trace.
+Answering a real question additionally needs the ingested corpus; see
+[The corpus](#the-corpus) and [Verify](#verify).
 
-**Try it fast (small subset).** The full corpus is large (step 4 is the long
-pole). To sanity-check the whole fetch → ingest → query pipeline in minutes
-instead of committing to the full build, cap the corpus to the first few hundred
-RFCs: `python -m corpus_fetch.fetch_all --max-rfc-number 300`, then the same
-`python ingest/run_ingest.py`. Everything downstream (registry, router, demo, MCP
-server) works identically on the subset -- there's just less of it.
+## One repo, five merged tools
 
-<a name="honest-scope"></a>
-## Honest scope: the sibling dependencies
+`agentic-rag` used to import `consilium` and `linkgraph` from sibling repositories by
+inserting their roots on `sys.path`, and required `RAGpack` pip-installed editable from a
+third. Cloning it meant cloning four repos at three commits pinned in three separate files
+-- which had already drifted apart from each other. `linkgraph` also read this repo's data
+file, so those two imported each other across a repository boundary.
 
-`agentic-rag` reuses two sibling repos as libraries, each a separate git repo
-living next to this one under the same parent directory, neither pip-installed --
-each imported by putting its root on `sys.path` (`agenticrag/_paths.py`):
+They are one repo now. Each merged tool kept its whole tree under `packages/<name>/`, so
+everything it resolves relative to its own root still resolves, and each kept its own
+commit history rather than being squashed into an import commit:
 
-| sibling | required by | how |
+| package | what it is | tests |
 |---|---|---|
-| **consilium** | every entrypoint -- `app.py`, `run_demo.py`, the eval, the MCP server | `sys.path` (the routing / citation-gating spine: Registry, Router, compose, integrity gate, ComputeModule) |
-| **linkgraph** | the MCP server's relationship tools only (`agenticrag/relationships.py`) -- the chat UI, demo, and eval never import it | `sys.path` |
-| **RAGpack** | ingest + embedding + the Qdrant store wrapper | pip-installed **editable** into this repo's venv (`pip install -e ../RAGpack`) -- `import ragpack` needs no `sys.path` entry |
+| [`packages/consilium`](packages/consilium) | the routing / citation-gating spine: Registry, Router, compose, integrity gate, ComputeModule | 5 eval suites |
+| [`packages/ragpack`](packages/ragpack) | ingest, chunking, embedding, the Qdrant store wrapper | 20 |
+| [`packages/linkgraph`](packages/linkgraph) | the cross-document relationship graph behind the MCP relationship tools | 50 |
+| [`packages/activerag`](packages/activerag) | evidence-thinness detection and bounded hunt-and-retry | 54 |
+| [`packages/chainrag`](packages/chainrag) | a second vertical over blockchain protocol docs, proving the spine is not corpus-specific | -- |
 
-Move this repo without `consilium` and every entrypoint fails immediately and
-loudly at import -- there is no silent degraded mode. `linkgraph`'s absence
-degrades only the MCP relationship tools (they return a documented
-`{"ok": false, "fallback": ...}` envelope), never the core answer path.
+They are nested under `packages/` rather than sitting at the repo root for a concrete
+reason: a top-level directory named `consilium` shadows the `consilium` package as an
+implicit namespace package, because the working directory precedes the editable install on
+`sys.path`. Imports then resolve to an empty namespace and `consilium.__file__` is `None`.
+CI asserts every package resolves to a file inside this repo, so that class of silent
+mis-binding fails the build instead of passing every test against the wrong copy.
 
-Verified this release against `consilium@5228cbb`, `linkgraph@61a08d2`,
-`RAGpack@681c018` (see `requirements.txt`).
+`rag-reliability` is the one dependency still outside this repo. It supplies `graphrx`,
+`headroom`, `vecstamp`, `chunkledger`, `plumbline` and `legigate` to three of the tools
+above, and is resolved by path today; packaging it so it can be a declared dependency is
+the outstanding follow-up. CI checks it out pinned and **fails if those integration tests
+skip**, so the one remaining path dependency cannot rot unnoticed.
 
 ## The corpus
 
@@ -275,12 +246,11 @@ rebuild). Closing both limitations in the incremental path is future work.
 
 ```
 agenticrag/
-  _paths.py           sibling-path bootstrap (consilium, linkgraph)
   embed_config.py     shared Settings (model/qdrant path) + embedder-consistency guard
   registry_loader.py  loads a consilium Module's chunks straight from Qdrant (current_only guard)
   bootstrap.py        build_registry(embedder, client=None) -> Registry; the 5 Descriptors; ROUTER_KWARGS
   supersession.py     SupersessionModule -- real Obsoletes/Obsoleted-by graph walk, cycle-safe
-  relationships.py    thin bridge into the linkgraph sibling (get_related / _obsoletion_chain / _corrections)
+  relationships.py    thin bridge into linkgraph (get_related / _obsoletion_chain / _corrections)
   calibrate.py        real router-score measurement script
   mcp/
     server.py         FastMCP server: search + the 3 relationship tools (stdio)
@@ -295,6 +265,12 @@ eval/
   prove_revision_guard.py            standalone, narrated revision-guard proof
   test_supersession_cycle_safety.py  cycle-safety unit tests (synthetic graph; corpus-free)
 tests/                unit tests for connectors / registry_loader / bootstrap (corpus-free)
+packages/             the five merged tools, each keeping its own tree and history
+  consilium/          routing / citation-gating spine (+ its 5 eval suites)
+  ragpack/            ingest / chunk / embed / Qdrant store (src-layout)
+  linkgraph/          cross-document relationship graph
+  activerag/          evidence-thinness detection and bounded hunt-and-retry
+  chainrag/           the blockchain-docs vertical
 app.py                gr.ChatInterface chat UI
 run_demo.py           scripted 3-question narrated transcript
 ```

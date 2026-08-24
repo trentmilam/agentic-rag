@@ -22,9 +22,6 @@ from pathlib import Path
 DEMO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(DEMO_ROOT))
 
-from agenticrag._paths import add_sibling_paths  # noqa: E402
-
-add_sibling_paths()
 
 from consilium.compute import answer_v3  # noqa: E402
 

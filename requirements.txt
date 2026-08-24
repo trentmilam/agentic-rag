@@ -1,18 +1,29 @@
 # agentic-rag runtime dependencies -- the full stack, pinned exactly (not floors) so a
 # fresh `pip install -r requirements.txt` resolves to the versions this repo was
 # verified against, rather than whatever happens to be latest later. The pins below
-# also fully satisfy RAGpack's own (floor-based) dependencies.
+# also satisfy ragpack's own (floor-based) dependencies -- including pypdf, which its
+# extractor needs and its test suite really exercises against PDF bytes.
 #
-# SIBLING REPOS (not on PyPI -- see the README "Honest scope" section):
-#   RAGpack   -- the ingest/chunk/embed/store engine; pip-installed editable:  pip install -e ../RAGpack
-#   consilium -- routing/citation-gating/hardening spine; imported via sys.path; NOT pip-installed
-#   linkgraph -- relationship graph (MCP tools only); imported via sys.path; NOT pip-installed
-# Verified this release against: RAGpack@681c018, consilium@5228cbb, linkgraph@61a08d2.
-# Re-clone the siblings adjacent to this repo under the same parent directory.
+# There are no sibling-repo pins here any more. consilium, ragpack, linkgraph, activerag
+# and chainrag are packages of this repo under packages/, installed by `pip install -e .`
+# -- see the README "One repo, five merged tools". The three commit pins that used to
+# live in this file, in agenticrag/_paths.py and in the CI workflow had already drifted
+# apart from one another, which is a good part of why they are gone.
+#
+# rag-reliability is the one remaining outside dependency (graphrx / headroom / vecstamp
+# / chunkledger / plumbline / legigate) and is resolved by path; CI pins it and fails if
+# the tests that use it skip.
 
-# --- test suite (tests/, agenticrag/mcp/, eval/ -- what scripts/verify.py and CI's
-# "Quick verify" step run via `pytest -q`; not needed to run app.py/run_demo.py) ---
+# --- test suite (this repo's own suites plus the merged packages under packages/ --
+# what scripts/verify.py and CI run; not needed to run app.py/run_demo.py) ---
 pytest==9.1.1
+
+# --- PDF text layer (packages/ragpack/src/ragpack/extract.py) -- a base dependency of
+# ragpack, not an extra. packages/ragpack/tests/test_extract.py builds a real PDF and
+# runs pypdf's extraction over it, so leaving this out turns that suite red, not skipped.
+# The scanned-PDF path needs python-doctr as well; that is heavy and lives in its own
+# CI job rather than here (see .github/workflows/ci.yml).
+pypdf==6.14.2
 
 # --- corpus fetch (corpus_fetch/, real HTTPS to rfc-editor.org / iana.org) ---
 requests==2.34.2

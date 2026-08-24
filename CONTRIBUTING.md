@@ -5,16 +5,19 @@ sharpen its correctness, honesty, or docs are welcome.
 
 ## Setup
 
-agentic-rag is **not standalone** — it imports the `consilium` and `linkgraph`
-sibling repos via `sys.path` and installs `RAGpack` editable. Follow the
-[README "Quickstart"](README.md#quickstart) to clone all four side-by-side, create
-the Python 3.12 venv, install the deps, and (only if you need the corpus-dependent
-paths) fetch + ingest the corpus.
+Clone this repository and nothing else. It used to need four checkouts side by
+side, because `consilium`, `linkgraph`, `RAGpack`, `activerag` and `chainrag` were
+separate repositories reached over `sys.path`; they are packages of this one now,
+under [`packages/`](packages/). Follow the [README "Quickstart"](README.md#quickstart)
+for the Python 3.12 venv, `pip install -r requirements.txt && pip install -e .`, and
+(only if you need the corpus-dependent paths) the corpus fetch + ingest.
 
-The exact sibling commits this release was verified against are pinned in
-[`requirements.txt`](requirements.txt) and in [`.github/workflows/ci.yml`](.github/workflows/ci.yml);
-`agenticrag/_paths.py::verify_sibling_api` fails loudly at registry-build time if the
-`consilium` checkout next to you has drifted from the API this repo calls.
+One outside dependency is left: [`rag-reliability`](https://github.com/trentmilam/rag-reliability)
+supplies `graphrx` and `headroom` to three of the merged packages, and is still
+resolved by path. Cloning it beside this repo enables those integrations; without
+it their tests skip locally. CI checks it out at a pinned commit and **fails if
+those tests report skipped instead of passing**, so the integration cannot rot
+behind a green badge.
 
 ## Verifying a change
 

@@ -23,9 +23,6 @@ import sys
 AGENTIC_RAG_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AGENTIC_RAG_ROOT)
 
-from agenticrag._paths import add_sibling_paths  # noqa: E402
-
-add_sibling_paths()
 
 import gradio as gr  # noqa: E402
 

@@ -1,24 +1,27 @@
 name: CI
 
-# Runs the fast, corpus-free checks on every push / PR. The corpus-dependent
-# evals (eval/eval_agenticrag.py, eval/prove_revision_guard.py) are NOT run here:
-# they need the ingested 321k-chunk corpus, which is fetched+built locally and
-# never committed (see the README "Full verify").
+# This workflow used to check out three sibling repositories at pinned commits and
+# pip-install a fourth editable, because agentic-rag imported consilium, linkgraph and
+# RAGpack across repository boundaries. Those pins lived in three separate files and had
+# already drifted apart. All four projects are packages of this repo now, so the whole
+# checkout-and-pin dance is gone: one checkout, one editable install.
 #
-# agentic-rag is not standalone -- it imports the consilium and linkgraph sibling
-# repos via sys.path and installs RAGpack editable (see the README "Honest scope").
-# CI reproduces that sibling layout by checking each one out next to this repo,
-# pinned to the exact commit this release was verified against (kept in lockstep
-# with requirements.txt's "Verified this release against" line). The siblings are
-# public repos, so the default token can read them; bump all three SHAs together
-# whenever the verified sibling set changes.
+# rag-reliability is the one genuine external dependency that remains -- it supplies
+# graphrx / headroom / vecstamp / chunkledger / plumbline / legigate to three of the
+# merged tools. It is still checked out as a sibling here, pinned. Packaging it so it
+# can be a declared dependency instead of a path is the outstanding follow-up.
 
 on:
   push:
   pull_request:
 
+# Python 3.12 only, deliberately. consilium and RAGpack each tested a matrix down to
+# 3.9 / 3.10 as standalone libraries. This is one application with a pinned
+# requirements.txt now, not a library other people install, so a version matrix would
+# test nothing it depends on -- pyproject declares requires-python = ">=3.12" to match.
+
 jobs:
-  quick-verify:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Check out agentic-rag
@@ -26,26 +29,12 @@ jobs:
         with:
           path: agentic-rag
 
-      - name: Check out consilium (verified sibling)
+      - name: Check out rag-reliability (supplies graphrx / headroom / the gate tools)
         uses: actions/checkout@v4
         with:
-          repository: trentmilam/consilium
-          ref: 5228cbb7cdd8c316702d48a884bab91f25712c5f
-          path: consilium
-
-      - name: Check out linkgraph (verified sibling)
-        uses: actions/checkout@v4
-        with:
-          repository: trentmilam/linkgraph
-          ref: 61a08d278029fa962397d072f7ab84b9e347b1d7
-          path: linkgraph
-
-      - name: Check out RAGpack (verified sibling)
-        uses: actions/checkout@v4
-        with:
-          repository: trentmilam/RAGpack
-          ref: 681c0187012a38339c14b519b9ccacf9fd801c0c
-          path: RAGpack
+          repository: trentmilam/rag-reliability
+          ref: caebd6a0869193775ebb832ced2c254983086a09
+          path: rag-reliability
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -53,13 +42,91 @@ jobs:
           python-version: '3.12'
           cache: pip
 
-      - name: Install dependencies (agentic-rag + editable RAGpack)
+      - name: Install
         working-directory: agentic-rag
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e ../RAGpack
+          pip install -e .
 
-      - name: Quick verify (corpus-free pytest)
+      # Fail loudly if a package resolves to anything outside this repo. When these
+      # lived in sibling checkouts, an import could silently bind to a stale copy on
+      # disk and every test would still pass; this makes that impossible to miss.
+      - name: Every merged package must resolve inside this repo
+        working-directory: agentic-rag
+        run: |
+          python - <<'PY'
+          import importlib, os, sys
+          root = os.path.abspath(".")
+          bad = []
+          for name in ("agenticrag","consilium","ragpack","linkgraph","activerag",
+                       "chainrag","corpus_fetch","ingest"):
+              m = importlib.import_module(name)
+              if m.__file__ is None:
+                  bad.append((name, "namespace package -- shadowed")); continue
+              p = os.path.abspath(m.__file__)
+              if not p.startswith(root):
+                  bad.append((name, p))
+          if bad:
+              print("packages resolved outside the repo:", bad); sys.exit(1)
+          print("all packages resolve inside the repo")
+          PY
+
+      - name: Corpus-free test suite
         working-directory: agentic-rag
         run: python scripts/verify.py
+
+      # The graphrx hand-off and the headroom gate are the only tests that need the
+      # external sibling. If they ever silently start skipping, this job would still be
+      # green while that integration rotted -- so assert they actually ran.
+      - name: The rag-reliability integrations must run, not skip
+        working-directory: agentic-rag
+        run: |
+          set -o pipefail   # else the exit status is tee's, and a FAILING command below stays green
+          pytest -rs packages/linkgraph/tests/test_graphrx_handoff.py                      packages/activerag/tests/test_headroom_gate.py | tee out.txt
+          if grep -q "skipped" out.txt; then
+            echo "rag-reliability sibling was not importable -- integration untested"; exit 1
+          fi
+
+      - name: Consilium eval suites
+        working-directory: agentic-rag/packages/consilium
+        run: python eval/run_all.py
+
+  # RAGpack shipped this as its own job and it has to survive the merge. tests/test_ocr.py
+  # opens with importorskip("doctr"), and docTR pulls ~1GB of torch/opencv/onnx plus
+  # pretrained weights fetched over the network -- too much for the main job, but skipping
+  # it outright would leave the scanned-PDF path green and untested forever. Same failure
+  # shape as the sibling imports this merge exists to remove: passing because the code
+  # never ran.
+  ocr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/doctr
+          key: doctr-models-${{ hashFiles('packages/ragpack/pyproject.toml') }}
+
+      # requirements.txt, not a second hand-written list: ragpack's extractor needs
+      # pypdf at the version this repo is verified against, and the first version of
+      # this job installed only doctr and failed on exactly that. docTR is the one
+      # thing added on top, because it is deliberately not a runtime dependency.
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install 'python-doctr[torch]>=0.8'
+
+      - name: The OCR path must run, not skip
+        run: |
+          set -o pipefail   # else the exit status is tee's, and a FAILING command below stays green
+          pytest -rs packages/ragpack/tests/test_ocr.py | tee ocr.txt
+          if grep -q "skipped" ocr.txt; then
+            echo "docTR was not importable -- the scanned-PDF path went untested"; exit 1
+          fi

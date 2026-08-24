@@ -31,10 +31,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from agenticrag._paths import add_sibling_paths
-
-add_sibling_paths()
-
 
 # The one hint every not-yet-wired relationship tool hands back, so a caller who
 # hits the un-built bridge is steered to the tool that *does* answer today.

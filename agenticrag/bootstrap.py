@@ -13,9 +13,6 @@ This is an entry file: it performs the sibling-path bootstrap (see
 """
 from __future__ import annotations
 
-from agenticrag._paths import add_sibling_paths
-
-add_sibling_paths()
 
 from consilium.module import Descriptor   # noqa: E402
 from consilium.registry import Registry   # noqa: E402
@@ -160,16 +157,10 @@ def build_registry(embedder, client=None) -> Registry:
     itself is closed only if the build FAILS; a caller-supplied client is always
     left to the caller.
     """
-    from agenticrag._paths import verify_sibling_api
     from agenticrag.embed_config import (
         SETTINGS, get_qdrant_client, verify_embedder_marker,
     )
     from agenticrag.qdrant_retrieval import QdrantModule, load_salient_chunks_by_source
-
-    # Fail LOUD if the consilium sibling next to this repo is present but its call
-    # contract has drifted from the verified release (a renamed symbol or a changed
-    # signature would otherwise surface as an opaque TypeError deep inside a query).
-    verify_sibling_api()
 
     # Fail LOUD if this process's configured embedder is not the one that
     # ingested the store -- otherwise every cosine score is silently meaningless

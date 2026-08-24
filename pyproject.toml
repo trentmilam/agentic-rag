@@ -1,7 +1,13 @@
-# agentic-rag is an APPLICATION run from source (dependencies via requirements.txt +
-# the sibling repos described in the README), not a distributable library, so this
-# file intentionally has no [build-system] / packaging section -- it exists to hold
-# project metadata and the pytest configuration.
+# agentic-rag is an APPLICATION run from source, not a library published to PyPI.
+# It declares packaging anyway, for one reason: the five tools it used to import from
+# sibling repositories now live in this one, each keeping its own directory so that
+# every path it resolves relative to its own root still resolves. `pip install -e .`
+# maps each package name to where it actually sits, so `import consilium` works from
+# anywhere in the tree without a single sys.path insertion.
+#
+# That is what replaced the old bootstrap: agentic-rag used to put ../consilium and
+# ../linkgraph on sys.path and require RAGpack installed editable from ../RAGpack,
+# with the exact sibling commits pinned in three separate files that drifted apart.
 
 [project]
 name = "agentic-rag"
@@ -11,6 +17,20 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Trent Milam" }]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Each merged tool kept its whole tree under packages/<name>/, so its package sits
+# one level inside that. They are nested rather than sitting at the repo root for a
+# concrete reason: a top-level directory named `consilium` shadows the `consilium`
+# package as an implicit namespace package, because the working directory precedes
+# the editable install on sys.path. Imports then resolve to an empty namespace and
+# `consilium.__file__` is None. RAGpack was src-layout; the rest were flat.
+package-dir = { agenticrag = "agenticrag", corpus_fetch = "corpus_fetch", ingest = "ingest", consilium = "packages/consilium/consilium", ragpack = "packages/ragpack/src/ragpack", linkgraph = "packages/linkgraph/linkgraph", activerag = "packages/activerag/activerag", chainrag = "packages/chainrag/chainrag" }
+packages = ["agenticrag", "agenticrag.mcp", "corpus_fetch", "ingest", "ingest.connectors", "consilium", "ragpack", "linkgraph", "activerag", "chainrag"]
 
 [tool.pytest.ini_options]
 # Pin the rootdir to THIS repo. Without an explicit config here, pytest walks up
@@ -22,6 +42,18 @@ authors = [{ name = "Trent Milam" }]
 # (eval/eval_agenticrag.py, eval/prove_revision_guard.py) are plain scripts, not
 # test_*.py files, so pytest never collects them -- they need the ingested 321k
 # chunk corpus and are run manually (see the README "Full verify").
-testpaths = ["tests", "agenticrag/mcp", "eval"]
+# Each merged tool keeps its own tests where they were, so they are listed here
+# rather than moved into a shared tests/ directory -- two of them shipped a
+# tests/test_evidence.py and merging those folders would have collided.
+testpaths = [
+    "tests", "agenticrag/mcp", "eval",
+    "packages/consilium", "packages/ragpack/tests",
+    "packages/linkgraph/tests", "packages/activerag/tests",
+]
 python_files = ["test_*.py"]
-addopts = "-q"
+# --import-mode=importlib because two merged tools each ship a tests/test_evidence.py
+# (RAGpack's and activerag's). Under pytest's default "prepend" mode both want the
+# module name `test_evidence` and the second one errors during collection. importlib
+# mode imports each by its full path, so same-named test files in different packages
+# coexist without needing __init__.py files scattered through the test directories.
+addopts = "-q --import-mode=importlib"

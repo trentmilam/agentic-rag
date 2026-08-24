@@ -27,9 +27,6 @@ identically to the full-corpus version, without materializing the corpus.
 """
 from __future__ import annotations
 
-from agenticrag._paths import add_sibling_paths
-
-add_sibling_paths()
 
 from consilium.embed import cosine, tokenize   # noqa: E402
 from consilium.module import Chunk, Module      # noqa: E402

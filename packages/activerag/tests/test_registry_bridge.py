@@ -12,6 +12,8 @@ no-live-dependency style of the other activerag tests.
 from __future__ import annotations
 
 import inspect
+import subprocess
+import sys
 
 import pytest
 
@@ -146,6 +148,23 @@ def test_repeated_refresh_all_keeps_swapping_without_accumulating_old_registries
 
 
 def test_importing_registry_bridge_never_pulls_in_qdrant_client():
-    import sys
+    """Importing this module must not drag in the Qdrant client.
 
-    assert "qdrant_client" not in sys.modules
+    That is the point of resolving ``build_registry`` lazily: merely importing (or
+    test-collecting) registry_bridge should stay dependency-light.
+
+    The subprocess is deliberate. This used to assert on the ambient ``sys.modules``
+    of the test session, which proved nothing about this module's import -- it held
+    only because activerag was its own repository and nothing else in that session
+    had any reason to import qdrant_client. Here other suites import it perfectly
+    legitimately, and the assertion began failing over an import it was never really
+    measuring. A fresh interpreter measures the thing the name claims."""
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; import activerag.registry_bridge; "
+         "sys.exit(1 if 'qdrant_client' in sys.modules else 0)"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, (
+        "importing activerag.registry_bridge pulled in qdrant_client\n" + result.stderr
+    )

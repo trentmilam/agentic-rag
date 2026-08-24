@@ -5,10 +5,10 @@ linkgraph is deliberately NOT standalone: it hands its export off to
 under the same ``projects/`` root (``rag-reliability/graphrx``), its own git
 repo. It is not pip-installed; it's imported by putting its repo ROOT (the
 directory that CONTAINS the ``graphrx/`` package, not the package dir itself)
-on ``sys.path`` -- the same convention agentic-rag's ``agenticrag/_paths.py``
-and chain-rag's ``chainrag/_paths.py`` already established for their own
-sibling repos, and the one ``graphrx/eval.py`` itself uses to make
-``import graphrx`` resolve from outside the package.
+on ``sys.path`` -- the same convention ``graphrx/eval.py`` itself uses to make
+``import graphrx`` resolve from outside the package. rag-reliability is the only
+repository still reached this way; the tools that used to sit beside linkgraph
+under ``projects/`` are packages of this repository now.
 
 (Unlike ``graphrx``, this repo's own ``pytest``/stdlib deps are pip-installed
 into linkgraph's own venv -- no sys.path entry needed for those.)
@@ -23,7 +23,16 @@ import os
 import sys
 
 LINKGRAPH_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECTS_ROOT = os.path.dirname(LINKGRAPH_ROOT)
+REPO_ROOT = os.path.dirname(os.path.dirname(LINKGRAPH_ROOT))
+PROJECTS_ROOT = os.path.dirname(REPO_ROOT)
+# NOTE ON DEPTH: this tool now lives at <repo>/packages/<name>/, two levels below the
+# repo root, so PROJECTS_ROOT is resolved from there rather than from a sibling-of-the
+# repo layout. consilium / ragpack / linkgraph / activerag / chainrag are NOT resolved
+# here any more -- they are packages of this repo, mapped by pyproject.toml's
+# package-dir and importable after `pip install -e .`. The only thing left below is
+# rag-reliability, which is a genuinely separate project; packaging it so it can be a
+# declared dependency instead of a path is the remaining follow-up.
+
 
 GRAPHRX_ROOT = os.path.join(PROJECTS_ROOT, "rag-reliability", "graphrx")
 

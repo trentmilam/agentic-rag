@@ -50,14 +50,19 @@ import shutil
 from pathlib import Path
 from typing import Callable, Sequence
 
-from activerag._paths import PROJECTS_ROOT, add_sibling_paths
+from activerag._paths import REPO_ROOT, add_sibling_paths
 
 add_sibling_paths()
 
 from activerag.evidence import EvidenceVerdict, evaluate as evaluate_evidence  # noqa: E402
 from activerag.registry_bridge import RegistryBridge  # noqa: E402
 
-_AGENTIC_RAG_ROOT = Path(PROJECTS_ROOT) / "agentic-rag"
+# The repo root itself. This was ``PROJECTS_ROOT / "agentic-rag"`` back when agentic-rag
+# was the checkout next door; after the merge that expression still resolved -- but only
+# because the working copy happens to be named agentic-rag. Cloned under any other
+# directory name it would have pointed at nothing, and ``mkdir(parents=True)`` below
+# would have created that nothing rather than failing.
+_AGENTIC_RAG_ROOT = Path(REPO_ROOT)
 
 
 def _real_run_ingest(data_dir: Path) -> None:

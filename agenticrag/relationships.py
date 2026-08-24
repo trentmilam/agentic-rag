@@ -11,9 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable, Optional
 
-from agenticrag._paths import add_sibling_paths
-
-add_sibling_paths()
 
 from linkgraph.adapter import load_from_export  # noqa: E402
 from linkgraph.graph import LinkGraph  # noqa: E402

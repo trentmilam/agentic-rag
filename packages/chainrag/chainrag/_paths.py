@@ -20,9 +20,17 @@ import os
 import sys
 
 CHAIN_RAG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECTS_ROOT = os.path.dirname(CHAIN_RAG_ROOT)
+REPO_ROOT = os.path.dirname(os.path.dirname(CHAIN_RAG_ROOT))
+PROJECTS_ROOT = os.path.dirname(REPO_ROOT)
+# NOTE ON DEPTH: this tool now lives at <repo>/packages/<name>/, two levels below the
+# repo root, so PROJECTS_ROOT is resolved from there rather than from a sibling-of-the
+# repo layout. consilium / ragpack / linkgraph / activerag / chainrag are NOT resolved
+# here any more -- they are packages of this repo, mapped by pyproject.toml's
+# package-dir and importable after `pip install -e .`. The only thing left below is
+# rag-reliability, which is a genuinely separate project; packaging it so it can be a
+# declared dependency instead of a path is the remaining follow-up.
 
-CONSILIUM_ROOT = os.path.join(PROJECTS_ROOT, "consilium")
+
 RAG_RELIABILITY_ROOT = os.path.join(PROJECTS_ROOT, "rag-reliability")
 
 # rag-reliability has NO __init__.py anywhere -- each tool is a flat module that
@@ -33,7 +41,7 @@ _RELIABILITY_TOOLS = ["vecstamp", "chunkledger", "plumbline", "legigate"]
 
 _SIBLING_ROOTS = [
     CHAIN_RAG_ROOT,     # so `import chainrag` resolves for entry scripts
-    CONSILIUM_ROOT,     # `import consilium`
+     # `import consilium`
     *[os.path.join(RAG_RELIABILITY_ROOT, t) for t in _RELIABILITY_TOOLS],
 ]
 

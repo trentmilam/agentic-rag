@@ -19,9 +19,6 @@ import re
 from collections import deque
 from pathlib import Path
 
-from agenticrag._paths import add_sibling_paths
-
-add_sibling_paths()
 
 from consilium.compute import ComputeModule  # noqa: E402
 

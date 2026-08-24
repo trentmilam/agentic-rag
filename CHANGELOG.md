@@ -6,6 +6,31 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- **agentic-rag is standalone.** `consilium`, `RAGpack`, `linkgraph`, `activerag` and
+  `chain-rag` were separate repositories that this one reached over `sys.path`; they are
+  packages of this repository now, under `packages/`, brought across with `git subtree`
+  so their own commit histories survive. `git clone && pip install -e . && pytest` works
+  from a bare checkout — previously it stopped at `ModuleNotFoundError` during
+  collection unless four sibling clones were laid out correctly beside it.
+  - `agenticrag/_paths.py` is deleted along with 22 `add_sibling_paths()` calls across
+    12 files and `bootstrap.verify_sibling_api()`, which existed only to detect a
+    drifted sibling checkout.
+  - The three separate sibling commit-pin lists (`requirements.txt`, `_paths.py`, the CI
+    workflow) had drifted apart from one another and are all gone; there is nothing left
+    to pin.
+  - `conftest.py` and CI now both refuse to run if any merged package resolves to a
+    namespace package or to a path outside this repository. Both failures are silent
+    otherwise — the suite passes green against the wrong copy of the source.
+  - `activerag.registry_bridge` no longer inserts a sibling `agentic-rag` checkout at the
+    front of `sys.path` before importing from it, and `activerag.refresh_hook` no longer
+    derives its data directory from the repository's own directory name.
+  - `rag-reliability` remains a genuine external dependency, supplying `graphrx` and
+    `headroom` to three of the merged packages. CI pins it and fails if the tests that
+    use it report skipped rather than passing.
+  - `pypdf` is declared in `requirements.txt`; RAGpack's extractor needs it, its test
+    suite exercises it against real PDF bytes, and it had only ever been present
+    incidentally. RAGpack's separate docTR/OCR CI job is preserved as its own job here.
+
 - `ingest/run_ingest.py` now prints progress: a start line (files found / changed
   since last run), a heartbeat at most every 15s during the embed/upsert loop, and
   the existing final JSON summary, unchanged. Previously the whole run — minutes on

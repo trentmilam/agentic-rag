@@ -36,9 +36,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from agenticrag._paths import add_sibling_paths  # noqa: E402
-
-add_sibling_paths()
 
 from consilium.module import Descriptor  # noqa: E402
 
