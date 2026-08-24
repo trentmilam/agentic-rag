@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      # Runs tests/test_ocr.py too, but it importorskip("doctr")s to a clean skip here --
+      # docTR isn't installed in this job (see the dedicated `ocr` job below), only pypdf
+      # (a base dependency), so the text-layer PDF path is still covered on every push.
+      - run: pytest -q
+
+  # The [ocr] extra (docTR + torch) is a heavy, separate install (~1GB of ML deps: torch,
+  # torchvision, opencv, onnx, scipy) that also downloads pretrained OCR weights from
+  # doctr-static.mindee.com on first use. That's too much to add to every matrix leg on every
+  # push, so it's split into its own job on a single Python version instead of skipped
+  # outright -- this still gives real, on-every-push coverage of the actual OCR path (a
+  # synthetic scanned PDF, no fixtures needed) rather than just asserting it works.
+  ocr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/doctr
+          key: doctr-models-${{ hashFiles('pyproject.toml') }}
+      - run: pip install -e ".[dev,ocr]"
+      - run: pytest -q tests/test_ocr.py
