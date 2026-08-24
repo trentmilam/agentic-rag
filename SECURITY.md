@@ -14,7 +14,7 @@ latest release on the default branch only.
 
 Please report suspected vulnerabilities privately rather than opening a public
 issue. Use GitHub's **[Report a vulnerability](https://github.com/trentmilam/agentic-rag/security/advisories/new)**
-(Security → Advisories) form, or email **trent@trentmilam.dev**.
+(Security → Advisories) form, or email **298508156+trentmilam@users.noreply.github.com**.
 
 Include enough detail to reproduce (affected file/endpoint, inputs, and observed
 vs. expected behavior). You can expect an initial acknowledgment within a few

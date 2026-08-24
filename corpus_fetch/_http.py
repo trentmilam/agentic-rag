@@ -21,7 +21,7 @@ import requests
 
 USER_AGENT = (
     "agentic-rag-portfolio-demo/0.1 "
-    "(+contact: trent@trentmilam.dev; purpose: personal portfolio RAG demo, non-commercial)"
+    "(+contact: 298508156+trentmilam@users.noreply.github.com; purpose: personal portfolio RAG demo, non-commercial)"
 )
 DEFAULT_TIMEOUT_SECONDS = 30
 MAX_RETRIES = 3
