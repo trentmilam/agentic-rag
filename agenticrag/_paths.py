@@ -43,7 +43,7 @@ def add_sibling_paths() -> None:
 # The exact sibling commits this release was verified against (also recorded in
 # requirements.txt). Named in the mismatch errors below so a divergent checkout
 # points at a concrete, checkoutable anchor rather than "some other version."
-_VERIFIED_SIBLINGS = "consilium@5228cbb, linkgraph@46bdd04, RAGpack@a0078fb"
+_VERIFIED_SIBLINGS = "consilium@5228cbb, linkgraph@61a08d2, RAGpack@681c018"
 
 
 def verify_sibling_api() -> None:
