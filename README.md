@@ -194,7 +194,7 @@ guard property here is two real, checkable facts, not one "corrected value":
 `anchor_centroid=0.25`, `anchor_best_chunk=0.25`) assume a near-zero baseline
 cosine between unrelated text: true for a bag-of-words `HashEmbedder`, not
 necessarily true for a real dense embedder over a 321k-chunk corpus (the same
-gap shows up even at a much smaller ~1,100-chunk scale). `agenticrag/calibrate.py`
+gap shows up even at a much smaller ~1,055-chunk scale). `agenticrag/calibrate.py`
 measures this directly against the real corpus + real embedder rather than
 assuming it; see `agenticrag/bootstrap.py::ROUTER_KWARGS` for the resulting
 per-instance kwargs and the real numbers that justified the decision.
