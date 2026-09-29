@@ -35,15 +35,15 @@ packages = ["agenticrag", "agenticrag.mcp", "corpus_fetch", "ingest", "ingest.co
 [tool.pytest.ini_options]
 # Pin the rootdir to THIS repo. Without an explicit config here, pytest walks up
 # and can adopt an unrelated ancestor directory's pytest.ini as its rootdir/
-# configfile on another machine -- silently changing collection behavior. This
+# configfile on another machine, silently changing collection behavior. This
 # file being present makes the repo its own rootdir on every clone.
 #
 # testpaths lists ONLY the fast, corpus-free suites. The corpus-dependent evals
 # (eval/eval_agenticrag.py, eval/prove_revision_guard.py) are plain scripts, not
-# test_*.py files, so pytest never collects them -- they need the ingested 321k
+# test_*.py files, so pytest never collects them: they need the ingested 321k
 # chunk corpus and are run manually (see the README "Full verify").
 # Each merged tool keeps its own tests where they were, so they are listed here
-# rather than moved into a shared tests/ directory -- two of them shipped a
+# rather than moved into a shared tests/ directory: two of them shipped a
 # tests/test_evidence.py and merging those folders would have collided.
 testpaths = [
     "tests", "agenticrag/mcp", "eval",

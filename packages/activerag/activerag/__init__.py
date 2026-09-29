@@ -1,4 +1,4 @@
-"""activerag — the Consilium-aware half of a self-extending RAG mechanism.
+"""activerag: the Consilium-aware half of a self-extending RAG mechanism.
 
 See ``README.md`` for scope and status. The package is a complete, bounded
 hunt-and-retry cycle over a Consilium answer: :mod:`activerag.evidence` (detect

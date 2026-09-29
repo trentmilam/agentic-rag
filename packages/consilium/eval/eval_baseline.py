@@ -1,4 +1,4 @@
-"""Consilium A/B eval — MEASURED head-to-head vs a naive no-gate RAG. Exit 0 on the gap.
+"""Consilium A/B eval: MEASURED head-to-head vs a naive no-gate RAG. Exit 0 on the gap.
 
     python eval/eval_baseline.py
 
@@ -10,7 +10,7 @@ baseline emits a confident cited answer to an out-of-scope query, or emits an un
 fabricated claim, that Consilium abstains-on or drops.
 
 FAIR BASELINE (not a strawman): ``naive_rag`` is exactly what a competent engineer's minimal
-RAG does -- embed the query, retrieve the global top-k chunks by cosine across ALL modules,
+RAG does: embed the query, retrieve the global top-k chunks by cosine across ALL modules,
 and return them as the cited answer, passing any LLM-proposed claims straight through. It uses
 the SAME embedder, the SAME corpus, and the SAME retrieval as Consilium. The ONLY variables
 removed are Consilium's three gates:
@@ -19,7 +19,7 @@ removed are Consilium's three gates:
   * the query-relevance floor (integrity.bind_claim query_floor).
 So the measured gap is attributable to the gates and nothing else. The baseline is NOT
 crippled: on IN-SCOPE queries it answers with real citations, at parity with Consilium (proved
-below) -- it only fails on the out-of-scope / fabricated surface, which is the point.
+below); it only fails on the out-of-scope / fabricated surface, which is the point.
 
 Deterministic (pure-python hashing embedder; no randomness, no network).
 """
@@ -37,16 +37,16 @@ from consilium.composer import compose             # noqa: E402
 
 
 def naive_rag(query, registry, embedder, k=3, extra_claims=None):
-    """A fair, minimal incumbent RAG: global top-k cosine retrieve -> answer.
+    """A fair, minimal incumbent RAG: global top-k cosine retrieve, then answer.
 
     No abstention floor, no anchor gate, no integrity binding, no query-relevance
-    check -- i.e. Consilium MINUS its gates. Always answers if the corpus is non-empty
+    check: i.e. Consilium MINUS its gates. Always answers if the corpus is non-empty
     (a naive RAG has nothing that would make it abstain). Any ``extra_claims`` (modelling
     an LLM that hallucinates an addition on top of the retrieved context) are emitted
-    verbatim -- with no source binding, they are *uncited*.
+    verbatim; with no source binding, they are *uncited*.
 
     Returns dict: abstained, cited (list of (module, chunk, cos_to_query)), uncited
-    (list of str -- emitted claims with no supporting span).
+    (list of str: emitted claims with no supporting span).
     """
     qv = embedder.embed_one(query)
     scored = []
@@ -80,7 +80,7 @@ def main() -> int:
 
     # relevance floor used ONLY to label a naive citation as query-irrelevant in the
     # report (it is Consilium's own default query_relevance_floor). It does not gate
-    # the baseline -- the baseline has no gate.
+    # the baseline; the baseline has no gate.
     REL = 0.05
 
     # ---------- IN-SCOPE: both must answer (proves the baseline is not crippled) ----------

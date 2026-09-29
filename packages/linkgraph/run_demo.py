@@ -1,8 +1,8 @@
-"""linkgraph LIVE DEMO -- a narrated walkthrough of the real cross-document
+"""linkgraph LIVE DEMO: a narrated walkthrough of the real cross-document
 relationship graph, run against linkgraph's own hand-authored fixture.
 
-    cd projects/linkgraph
-    .venv/Scripts/python.exe run_demo.py
+    From the repo root, after `pip install -e .`:
+    python packages/linkgraph/run_demo.py
 
 No mocked output: every graph build, traversal, and lint report below runs
 live against ``linkgraph.fixtures.FIXTURE_ENTITY_REFS``. The naive-successor
@@ -11,11 +11,11 @@ baseline and the bad-merge planter are imported UNMODIFIED from ``eval.py``
 head-to-head and the graphrx catch shown below are the exact same mechanism
 that test proves, just narrated for a reader instead of asserted.
 
-Fixture note: every identifier below uses the ``RFCX``/``ERRX`` prefix on
-purpose -- see ``linkgraph/fixtures.py``'s own docstring for why. A real RFC
-citation is always exactly ``RFC`` followed by digits with no letter in
-between, so ``RFCX9010`` etc. can never collide with, and are not a claim
-about, any real, currently-assigned RFC. The GENERAL SHAPE of the fixture
+Fixture note: every identifier below uses the ``RFCX``/``ERRX`` prefix; see
+``linkgraph/fixtures.py``'s own docstring for why. A real RFC citation is
+always exactly ``RFC`` followed by digits with no letter in between, so
+``RFCX9010`` etc. can never collide with, and are not a claim about, any
+real, currently-assigned RFC. The GENERAL SHAPE of the fixture
 (a monolithic document later split into several independent successors) does
 mirror real, well-known RFC history, and that comparison is called out below
 where it applies.
@@ -32,7 +32,7 @@ sys.path.insert(0, ROOT)
 
 # NOTE: import this repo's own eval.py BEFORE add_sibling_paths() runs. graphrx
 # (rag-reliability/graphrx) also has its own top-level eval.py, and
-# add_sibling_paths() puts graphrx's root ahead of this one on sys.path -- so
+# add_sibling_paths() puts graphrx's root ahead of this one on sys.path, so
 # resolving "eval" after that call would silently import graphrx's eval.py
 # instead. While ROOT is still first on sys.path, this is unambiguous.
 from eval import naive_latest_successor, plant_bad_merge  # noqa: E402

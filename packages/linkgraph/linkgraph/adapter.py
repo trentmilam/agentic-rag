@@ -11,7 +11,7 @@ directly, not assumed)::
 
 ``graphrx.graph.adjacency()`` does a strict 2-tuple unpack over ``edges`` and
 crashes on anything richer, so every edge here is flattened to its plain
-undirected endpoints on export -- linkgraph's own typed/directed/scored edges
+undirected endpoints on export. linkgraph's own typed/directed/scored edges
 are the internal representation; only the flattened form crosses the
 boundary. Nodes tolerate arbitrary extra keys (only ``facts``/``community``
 are read by ``graphrx``), so ``entity_type`` is included for readability.
@@ -26,12 +26,12 @@ from .graph import LinkGraph
 
 def export_graphrx_graph(graph: LinkGraph, min_edge_score: float = 0.0) -> dict:
     """``min_edge_score`` filters ONLY ``co_mentions`` edges before flattening
-    (same convention as ``LinkGraph.get_related``'s ``min_score`` -- the other
+    (same convention as ``LinkGraph.get_related``'s ``min_score``: the other
     three edge types are asserted facts, not a scored signal to threshold).
 
     Precondition: call ``community.assign_communities(graph)`` first for a
     meaningful ``community`` label. A node with no assignment yet falls back
-    to its own id as a singleton label, so this never crashes -- but that
+    to its own id as a singleton label, so this never crashes, but that
     fallback is not a substitute for real assignment.
     """
     nodes: dict[str, dict] = {}
@@ -65,7 +65,7 @@ def export_graphrx_graph(graph: LinkGraph, min_edge_score: float = 0.0) -> dict:
 def load_from_export(candidates_jsonl_path: str) -> list[EntityRef]:
     """The documented, swappable loader: reads a real ``candidates.jsonl``
     file (one JSON object per line, per the contract in ``contract.py``) into
-    ``EntityRef``s. Makes no fixture-specific assumptions -- every field is
+    ``EntityRef``s. Makes no fixture-specific assumptions: every field is
     read generically, so this is expected to work unmodified once
     agentic-rag's real ingest emits the real file; point it there instead of
     a fixture path and nothing else changes.

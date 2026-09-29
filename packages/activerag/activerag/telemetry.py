@@ -1,15 +1,15 @@
 """Append-only audit trail for a hunt-and-retry cycle.
 
-RAGpack's ``ingest_and_retry`` (``projects/RAGpack/src/ragpack/pipeline.py``)
+RAGpack's ``ingest_and_retry`` (``packages/ragpack/src/ragpack/pipeline.py``)
 returns a single ``IngestRetryResult`` and forgets the attempt once the caller
 is done with it. At the Consilium layer, "why did the hunt trigger, what did
 it try, and did it help" is exactly the kind of thing a portfolio reviewer (or
-a future debugging session) wants to replay after the fact -- so this module
+a future debugging session) wants to replay after the fact, so this module
 gives every hunt cycle a durable, human-inspectable record.
 
-This is intentionally a dumb recorder: it has ZERO import dependency on
+This is intentionally a dumb recorder: it has zero import dependency on
 ``activerag.evidence`` (or anything else in this package). Verdict fields are
-stored as plain ``dict``s -- a caller passes ``dataclasses.asdict(verdict)`` --
+stored as plain ``dict``s (a caller passes ``dataclasses.asdict(verdict)``),
 so this module never needs to know the shape of an ``EvidenceVerdict``, and
 would keep working unchanged even if that shape changes.
 """
@@ -43,7 +43,7 @@ class HuntEvent:
 
 def append_event(event: HuntEvent, path: Path) -> None:
     """Append ``event`` as one JSON line to ``path``. Creates parent
-    directories if needed. Never truncates or rewrites existing lines --
+    directories if needed. Never truncates or rewrites existing lines;
     append-only, so the file is always safe to re-open across process runs."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -53,7 +53,7 @@ def append_event(event: HuntEvent, path: Path) -> None:
 
 def read_events(path: Path) -> list[dict]:
     """Read every event back as a parsed dict, in append order. Returns an
-    empty list if ``path`` does not exist yet -- that is a normal "no hunts
+    empty list if ``path`` does not exist yet; that is a normal "no hunts
     recorded yet" state, not an error."""
     path = Path(path)
     if not path.exists():

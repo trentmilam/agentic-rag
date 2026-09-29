@@ -3,7 +3,7 @@
 v1 is extractive: the retrieved supporting chunks ARE the claims, so every line
 of the answer is bound to a real source span (the citation-coverage guarantee).
 ``extra_claims`` lets a caller feed an LLM-proposed / test-injected claim through
-the same integrity gate -- an unsupported one is dropped.
+the same integrity gate; an unsupported one is dropped.
 
 v2 (``harden=True``) adds the integrity-hardening layer: per-module poison
 quarantine before gating, and cross-module conflict detection (resolved by module

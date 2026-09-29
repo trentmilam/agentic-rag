@@ -1,7 +1,7 @@
 """Header/section-aware pre-splitter.
 
 RAGpack's own ``chunk_text`` is paragraph-boundary-only with no notion of document
-structure -- a short section can merge into its neighbor, and no chunk records which
+structure: a short section can merge into its neighbor, and no chunk records which
 section it came from. For citation-gated retrieval over technical specs, a citation
 should never straddle a real header boundary. This module splits on markdown ATX
 headers first (``split_into_sections``), then leaf-chunks each section's body with
@@ -27,7 +27,7 @@ class Section:
 
 def split_into_sections(text: str) -> list[Section]:
     """Split markdown-ish text on ATX headers (#, ##, ...). Text with no headers at
-    all (e.g. raw PDF-extracted prose) becomes a single section -- RAGpack's own
+    all (e.g. raw PDF-extracted prose) becomes a single section; RAGpack's own
     paragraph-aware chunk_text still applies within it, just without section anchors."""
     text = clean_text(text)
     lines = text.split("\n")
@@ -51,7 +51,7 @@ def split_into_sections(text: str) -> list[Section]:
         flush()
         level, title = len(m.group(1)), m.group(2).strip()
         # Truncate by header LEVEL, not stack position: a document that never
-        # uses level-1 headers (common in HTML->markdown conversions) must not
+        # uses level-1 headers (common in HTML-to-markdown conversions) must not
         # have its first header become a permanent ancestor of every sibling.
         stack = [(lvl, t) for lvl, t in stack if lvl < level] + [(level, title)]
         current_title = title

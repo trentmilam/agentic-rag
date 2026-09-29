@@ -1,7 +1,7 @@
 """Fetch RFC full text, verbatim and unmodified, for RFC 1 through 6000.
 
 A clean, deterministic, reproducible range (skipping numbers the real index marks
-``Not Issued`` -- no document exists for those). Each ``rfcNNNN.txt`` is fetched from
+``Not Issued``, no document exists for those). Each ``rfcNNNN.txt`` is fetched from
 the confirmed-working pattern ``https://www.rfc-editor.org/rfc/rfcNNNN.txt`` and
 written to disk byte-for-byte, including the RFC's own embedded IETF Trust copyright
 notice. Resumable: an existing file is left alone unless ``force=True``.
@@ -27,7 +27,7 @@ def fetch_rfc_text(
     max_number: int = MAX_RFC_NUMBER, force: bool = False, max_workers: int = DEFAULT_MAX_WORKERS,
 ) -> dict:
     """Fetch full text for every issued RFC number in ``[1, max_number]`` per the real
-    parsed index (``Not Issued`` numbers -- absent from ``index`` -- are skipped, not
+    parsed index (``Not Issued`` numbers, absent from ``index``, are skipped, not
     guessed at). Every outcome (fetched / skipped-existing / not-found / error) is
     tallied and returned; nothing is silently swallowed."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -52,7 +52,7 @@ def fetch_rfc_text(
             resp.raise_for_status()
             target.write_bytes(resp.content)
             results[number] = "fetched"
-        except Exception as exc:  # noqa: BLE001 -- one bad RFC must not abort the whole batch
+        except Exception as exc:  # noqa: BLE001 - one bad RFC must not abort the whole batch
             results[number] = "error"
             failures.append((number, f"{type(exc).__name__}: {exc}"))
 

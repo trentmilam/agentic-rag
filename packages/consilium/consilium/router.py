@@ -8,15 +8,15 @@ A module's routing score blends three signals, all cheap and deterministic:
 
 The clean signals (centroid, subject overlap) are weighted over the noisy
 best-chunk term, because a single hash-bucket collision can give an unrelated
-query a spurious best-chunk score -- but never a centroid or subject-overlap one.
+query a spurious best-chunk score, but never a centroid or subject-overlap one.
 
 Selection is by an **absolute floor**: every module scoring >= ``floor`` is
-selected (that is the fan-out for cross-domain queries -- a relevant secondary
+selected (that is the fan-out for cross-domain queries: a relevant secondary
 module sits well above the floor, an out-of-scope one well below). If NO module
 clears the floor, the query is out-of-scope and the router **abstains**.
 
 Clearing the floor is necessary but not sufficient: the selection must also
-contain at least one **anchor** module -- one the query genuinely engages
+contain at least one **anchor** module, one the query genuinely engages
 (>=2 subject tokens, OR a strong descriptor-centroid, OR a strong best-chunk
 match). A query that clears the floor purely on ONE incidental subject keyword
 (e.g. "stock" in "race my stock car", "market" in "the farmers market") yields no
@@ -49,11 +49,11 @@ class Router:
                  anchor_best_chunk: float = 0.25) -> None:
         self.registry = registry
         self.embedder = embedder
-        self.floor = floor      # a module must score >= floor to be selected; none => abstain
+        self.floor = floor      # a module must score >= floor to be selected; if none do, abstain
         # A selection must contain at least one ANCHOR module, or the query is
         # treated as out-of-scope and the router abstains. A lone module that
         # clears the floor purely on ONE incidental subject keyword (a low
-        # descriptor-centroid, single subject-token match) is NOT an anchor -- this
+        # descriptor-centroid, single subject-token match) is NOT an anchor: this
         # closes the fail-open where e.g. "race my stock car" or "the farmers
         # market" scored just over the floor on the single word stock/market and
         # got a confidently-cited, query-irrelevant answer. A genuine query always
@@ -101,7 +101,7 @@ class Router:
                                {"reason": "no module cleared floor", "floor": self.floor})
         if not any(bd["anchor"] for _, _, bd in cleared):
             # Every module that cleared the floor did so on a lone incidental
-            # keyword -- out of scope. Abstain rather than emit an irrelevant answer.
+            # keyword, out of scope. Abstain rather than emit an irrelevant answer.
             return RouteResult(query, ranked, [], True,
                                {"reason": "no anchor module (only incidental-keyword matches)",
                                 "floor": self.floor})

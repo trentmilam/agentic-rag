@@ -3,31 +3,30 @@
 When :mod:`activerag.evidence` says an answer is thin, hunting for more evidence
 is not free: it costs another retrieval/reasoning hop on the GPU. On a
 VRAM-bound, thermally fragile card that hop can be the one that wedges it. So
-before the orchestrator (:mod:`activerag.orchestrator`) escalates, it consults a *physical*
-budget governor -- not a token/cost governor -- that reads VRAM headroom,
-thermal margin to the abort line, and the latency budget, and answers
-ALLOW / DEFER / DENY.
+before the orchestrator (:mod:`activerag.orchestrator`) escalates, it consults
+a *physical* budget governor, not a token/cost governor, that reads VRAM
+headroom, thermal margin to the abort line, and the latency budget, and
+answers ALLOW / DEFER / DENY.
 
 That governor is not re-implemented here. It is the ``Headroom`` /
 ``GpuProfile`` / ``Decision`` machinery from the sibling repo
-``rag-reliability`` (``projects/rag-reliability/headroom/headroom.py``), reused
-wholesale via the sibling-path import in :mod:`activerag._paths`. That directory
-is a FLAT module directory with no ``__init__.py`` (headroom.py, loop.py, ...
-live directly in it), so ``add_sibling_paths`` puts the ``headroom/`` directory
-ITSELF on ``sys.path`` and ``import headroom`` resolves the flat module -- see
-``_paths.py`` for why that differs from the package-root convention linkgraph /
-agentic-rag use.
+``rag-reliability`` (``headroom/headroom.py``, cloned next to the agentic-rag
+repo itself), reused wholesale via the sibling-path import in
+:mod:`activerag._paths`. That directory is a flat module directory with no
+``__init__.py`` (headroom.py, loop.py, ... live directly in it), so
+``add_sibling_paths`` puts the ``headroom/`` directory itself on ``sys.path``
+and ``import headroom`` resolves the flat module; see ``_paths.py`` for why
+that differs from the package-root convention linkgraph / agentic-rag use.
 
-**All GPU telemetry here is SIMULATED and clearly labelled as such.** There is
+**All GPU telemetry here is simulated and clearly labelled as such.** There is
 no ``nvidia-smi`` / ``pynvml`` call anywhere in activerag: the trajectory fed to
 the governor is a scripted, deterministic ``headroom.Trajectory``. This matches
-rag-reliability/headroom's own established, honest convention -- explicitly
-labelled simulated hardware data is the accepted portfolio pattern; the governor
-itself never learns it is simulated, it only ever sees numbers exactly as it
-would from real telemetry.
+rag-reliability/headroom's own established convention of explicitly labelling
+simulated hardware data; the governor itself never learns it is simulated, it
+only ever sees numbers exactly as it would from real telemetry.
 
 The activerag-facing question is narrower than headroom's general "may I
-escalate one more hop": here it is specifically "may I afford ONE more hop --
+escalate one more hop": here it is specifically "may I afford one more hop,
 the hunt?" So the ``Decision`` is mapped to a plain ``may_hunt`` boolean: only
 ``ALLOW`` permits the hunt now; ``DEFER`` ("cool down / evict KV first") and
 ``DENY`` ("answer with what you have") both mean *not now*.
@@ -44,7 +43,7 @@ from activerag._paths import add_sibling_paths
 
 add_sibling_paths()
 
-# Reused wholesale from the sibling repo -- no re-implementation. (E402: the
+# Reused wholesale from the sibling repo; no re-implementation. (E402: the
 # sibling path must be on sys.path first, hence the import follows the call.)
 from headroom import (  # noqa: E402
     CARD_A,
@@ -71,10 +70,10 @@ __all__ = [
 ]
 
 
-# --- Clearly-labelled SIMULATED telemetry --------------------------------------
+# --- Clearly-labelled simulated telemetry --------------------------------------
 # Each schedule is the scripted post-hop telemetry (vram_used_mb, temp_c,
 # hop_ms) for hops 1..N, fed to a deterministic headroom.Trajectory. These are
-# NOT real measurements -- there is no nvidia-smi/pynvml anywhere in activerag.
+# not real measurements; there is no nvidia-smi/pynvml anywhere in activerag.
 # They exist so activerag has honest, reproducible inputs to demonstrate and
 # test the gate against, in the same explicitly-simulated spirit as
 # rag-reliability/headroom's own reference trajectories. The numbers are sized to
@@ -82,7 +81,7 @@ __all__ = [
 # example) and CARD_A (the tighter 16 GB / lower-margin example).
 
 # A roomy card (CARD_B) mid-run: cool, plenty of VRAM headroom, well inside the
-# latency budget -- the gate should ALLOW another hop.
+# latency budget. The gate should ALLOW another hop.
 SIM_HEALTHY_ROOMY = [
     (12000.0, 55.0, 800.0),
     (12500.0, 56.0, 820.0),
@@ -103,7 +102,7 @@ SIM_NEAR_WEDGE_TIGHT = [
 
 @dataclass
 class HuntDecision:
-    """activerag's answer to "is there room to hunt?" -- the ``Headroom``
+    """activerag's answer to "is there room to hunt?": the ``Headroom``
     verdict plus the derived boolean the orchestrator actually acts on."""
 
     may_hunt: bool
@@ -116,7 +115,7 @@ class HuntHeadroomGate:
     """Thin activerag adapter over the real ``headroom.Headroom`` governor.
 
     Feed each completed retrieval hop's telemetry with :meth:`observe_hop`, then
-    call :meth:`may_hunt` to ask whether the next hop -- the hunt -- is
+    call :meth:`may_hunt` to ask whether the next hop, the hunt, is
     physically affordable. Every decision comes straight from
     ``Headroom.gate()``; this class adds only the ALLOW->``may_hunt`` mapping and
     surfaces the governor's own audited reason string.
@@ -134,7 +133,7 @@ class HuntHeadroomGate:
 
     def may_hunt(self) -> HuntDecision:
         """Consult the governor for permission to afford one more hop (the
-        hunt). With no hops observed yet, the governor cold-starts to ALLOW --
+        hunt). With no hops observed yet, the governor cold-starts to ALLOW:
         the first hunt is permitted unconditionally, exactly as headroom does."""
         decision = self._governor.gate()
         reason = self._governor.log[-1].reason

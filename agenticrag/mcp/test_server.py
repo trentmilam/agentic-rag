@@ -1,6 +1,6 @@
 """Fixture-only tests for agenticrag.mcp.server.
 
-Built entirely against hand-constructed fakes and a tiny synthetic corpus -- no
+Built entirely against hand-constructed fakes and a tiny synthetic corpus: no
 ``mcp`` package, no real embedder, no Qdrant, no network. The fakes stand in for
 the real ``consilium.router.RouteResult`` / ``consilium.registry.Registry`` /
 embedder, but are plain local objects.
@@ -12,10 +12,10 @@ assert the wrapper adds nothing:
   * a healthy (compute-path) answer passes straight through too.
 
 The relationship tools are covered on BOTH branches of their one stable envelope:
-  * the failure branch -- degrade to ``{"ok": False, ..., "fallback": ...}`` when
+  * the failure branch: degrade to ``{"ok": False, ..., "fallback": ...}`` when
     the ``agenticrag.relationships`` bridge is unimportable (simulated
     deterministically, see ``_simulate_missing_relationships_bridge``);
-  * the success branch -- ``{"ok": True, ..., "result": ...}`` driven through the
+  * the success branch: ``{"ok": True, ..., "result": ...}`` driven through the
     REAL linkgraph-backed bridge against a small synthetic ``candidates.jsonl``
     (the ``_real_bridge_over_synthetic_corpus`` pytest fixture). The success-path
     tests are pytest-only (they need ``tmp_path``/``monkeypatch``); the ``__main__``
@@ -46,7 +46,7 @@ from agenticrag.mcp import server  # noqa: E402  (add_sibling_paths runs on impo
 
 
 # ---------------------------------------------------------------------------
-# Fakes -- shapes mirror consilium.router.RouteResult (query, ranked, selected,
+# Fakes: shapes mirror consilium.router.RouteResult (query, ranked, selected,
 # abstained, trace) and a minimal Registry/embedder. See consilium/router.py.
 # ---------------------------------------------------------------------------
 @dataclass
@@ -59,7 +59,7 @@ class FakeRouteResult:
 
 
 class FakeRouter:
-    """Returns a preset RouteResult -- no scoring, no embedder use."""
+    """Returns a preset RouteResult: no scoring, no embedder use."""
     def __init__(self, result: FakeRouteResult):
         self._result = result
 
@@ -114,7 +114,7 @@ def check_search_abstain() -> dict:
 
 def check_search_healthy_compute() -> dict:
     """A non-abstain (single compute module) answer_v3 result also passes through
-    verbatim -- proving the wrapper isn't abstain-only special-cased."""
+    verbatim, proving the wrapper isn't abstain-only special-cased."""
     from consilium.compute import make_finance_module
 
     quant = make_finance_module(FakeEmbedder(), name="quant")   # real ComputeModule
@@ -133,7 +133,7 @@ def check_search_healthy_compute() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# relationship tools -- bridge unimportable/broken -> documented fallback
+# relationship tools: bridge unimportable/broken falls back to the documented
 # envelope. ``agenticrag.relationships`` is now a real, working module (see its
 # own docstring), so these tests can no longer rely on an accident of it not
 # existing on disk; instead they force ``server._call_bridge``'s
@@ -150,7 +150,7 @@ def _simulate_missing_relationships_bridge():
 
     Two things have to be undone for the standard "poison sys.modules with
     None" trick to work here: (1) set ``sys.modules["agenticrag.relationships"]
-    = None`` -- the documented way to make an import of that dotted name raise
+    = None``, the documented way to make an import of that dotted name raise
     ``ModuleNotFoundError``; and (2) also remove the ``relationships``
     attribute Python auto-installs on the parent ``agenticrag`` package after
     any successful import, because ``from agenticrag import relationships``
@@ -224,10 +224,10 @@ def test_get_corrections_falls_back_when_bridge_missing():
 
 
 # ---------------------------------------------------------------------------
-# relationship tools -- REAL linkgraph-backed SUCCESS path (the other branch of
+# relationship tools: REAL linkgraph-backed SUCCESS path (the other branch of
 # the one stable envelope: {"ok": True, "tool", "result"}). Driven through the
 # real agenticrag.relationships bridge + real linkgraph over a tiny synthetic
-# candidates.jsonl -- no corpus, no Qdrant, no network. Pytest-only (needs
+# candidates.jsonl, no corpus, no Qdrant, no network. Pytest-only (needs
 # tmp_path/monkeypatch), so these are not in the __main__ runner above.
 # ---------------------------------------------------------------------------
 # One JSON object per line, per linkgraph/contract.py's candidates.jsonl contract,

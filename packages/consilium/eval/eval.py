@@ -1,4 +1,4 @@
-"""Consilium v1 scripted eval — measured metrics, exits 0 on thresholds.
+"""Consilium v1 scripted eval: measured metrics, exits 0 on thresholds.
 
     python eval/eval.py
 
@@ -67,7 +67,7 @@ def main() -> int:
     # --- OOS lone-incidental-keyword abstention (red-case for the fail-open fix) ---
     # An out-of-scope query whose ONLY overlap with a module is a single incidental
     # subject keyword ("stock" in "race my stock car"; "market" in "farmers market")
-    # MUST abstain -- both at the router AND end-to-end (no cited answer emitted).
+    # MUST abstain, both at the router AND end-to-end (no cited answer emitted).
     # Before the fix these cleared floor=0.11 and returned confidently-cited but
     # query-irrelevant answers.
     oosk = cases["oos_keyword"]

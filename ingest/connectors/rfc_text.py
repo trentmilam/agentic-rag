@@ -1,11 +1,11 @@
 """RFC full text, ingested verbatim.
 
 Each ``rfcNNNN.txt`` under ``data/raw/rfc_text/`` is the exact, unmodified body
-fetched from ``https://www.rfc-editor.org/rfc/rfcNNNN.txt`` -- including its own
+fetched from ``https://www.rfc-editor.org/rfc/rfcNNNN.txt``, including its own
 IETF Trust copyright notice, which is never stripped (the Trust Legal Provisions that
 permit republishing this text at all require it to stay intact).
 
-``part_number`` holds ``f"RFC{number}"`` -- the lookup key ``run_ingest.py`` uses
+``part_number`` holds ``f"RFC{number}"``, the lookup key ``run_ingest.py`` uses
 against the real Obsoletes/Obsoleted-by graph to decide ``is_current``; this connector
 has no revision concept of its own to set ``revision`` to (an RFC's full text is a
 single immutable document, never a specific revision of a series).

@@ -1,8 +1,8 @@
 """CUDA-accelerated OCR: EasyOCR primary, PaddleOCR confidence-gated fallback.
 
 Runs BEFORE RAGpack's own ingest path (embed_config.SETTINGS always forces
-``ocr="never"``) so per-line OCR confidence -- which RAGpack's built-in docTR OCR
-discards -- survives into the ingest report for ChunkLedger/Plumbline/Legigate.
+``ocr="never"``) so per-line OCR confidence, which RAGpack's built-in docTR OCR
+discards, survives into the ingest report for ChunkLedger/Plumbline/Legigate.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ _PADDLE_OCR = None
 
 
 def needs_ocr(pdf_path: str | Path) -> bool:
-    """True if the PDF's text layer is empty/garbled -- reuses RAGpack's own check."""
+    """True if the PDF's text layer is empty/garbled; reuses RAGpack's own check."""
     text = extract_text(pdf_path, ocr="never")
     return is_garbled(text)
 
@@ -116,14 +116,14 @@ def ocr_pdf(pdf_path: str | Path, min_confidence: float = 0.55) -> OcrResult:
     ``min_confidence``, retry with PaddleOCR and keep whichever scored higher.
 
     Either engine failing outright (CUDA OOM, a corrupt rasterized page, a missing
-    model download) is treated as "that engine unavailable", not fatal -- only
+    model download) is treated as "that engine unavailable", not fatal; this only
     raises if BOTH engines fail."""
     pages = _rasterize(pdf_path)
 
     primary, primary_err = None, None
     try:
         primary = _ocr_with_easyocr(pages)
-    except Exception as exc:  # noqa: BLE001 - deliberately broad: any OCR backend failure
+    except Exception as exc:  # noqa: BLE001 - any OCR backend failure is handled below
         primary_err = exc
 
     if primary is not None and primary.mean_confidence >= min_confidence:

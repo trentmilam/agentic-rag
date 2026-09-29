@@ -3,12 +3,12 @@
 Every fetcher in this package hits the same two real, public hosts
 (``rfc-editor.org``, ``errata.rfc-editor.org``, ``iana.org``) with the same
 identifying ``User-Agent``, the same small bounded connection pool, and the same
-retry-with-backoff on transient failures -- factored out once so each ``fetch_*.py``
+retry-with-backoff on transient failures, factored out once so each ``fetch_*.py``
 module states only what it fetches, not how to be polite about it.
 
 Politeness here means: never more than ``DEFAULT_MAX_WORKERS`` requests to a host in
 flight at once (a real bounded thread pool, not unbounded ``asyncio.gather``-style
-fan-out), plus a small per-request pause on top of that pool -- this is a portfolio
+fan-out), plus a small per-request pause on top of that pool. This is a portfolio
 demo hitting production IETF/IANA infrastructure, not a load test.
 """
 from __future__ import annotations
@@ -44,7 +44,7 @@ def get_with_retries(
     """GET with a few retries on transient (network / 5xx) failures.
 
     Raises on the final attempt so a caller doing thousands of these never mistakes a
-    real, persistent failure for a success -- see each fetcher's own tally/report
+    real, persistent failure for a success; see each fetcher's own tally/report
     logic for how failures are surfaced rather than swallowed.
     """
     last_exc: Exception | None = None
@@ -66,7 +66,7 @@ def get_with_retries(
 def fetch_many(items: Iterable[T], fetch_one: Callable[[T], None], *, max_workers: int = DEFAULT_MAX_WORKERS) -> None:
     """Run ``fetch_one`` over ``items`` on a small bounded thread pool.
 
-    This bounded pool -- never more than ``max_workers`` requests in flight -- IS the
+    This bounded pool (never more than ``max_workers`` requests in flight) IS the
     politeness mechanism the callers rely on; ``fetch_one`` itself does no additional
     concurrency control.
     """

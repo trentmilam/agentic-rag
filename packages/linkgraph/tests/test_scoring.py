@@ -1,5 +1,5 @@
 """Co-mention scoring: plausibility checked via RELATIVE inequalities (more
-shared documents -> a strictly higher score), never a magic constant."""
+shared documents producing a strictly higher score), never a magic constant."""
 from linkgraph.scoring import co_mention_scores
 
 
@@ -21,7 +21,7 @@ def test_never_co_mentioned_pair_has_no_entry():
 
 
 def test_repeated_mention_of_one_entity_in_one_doc_does_not_inflate_the_score():
-    # entity "a" mentioned 3x in the SAME doc as "b" once -- still one document
+    # entity "a" mentioned 3x in the SAME doc as "b" once: still one document
     # of shared evidence, not three.
     doc_groups = {"doc-1": ["a", "a", "a", "b"]}
     scores = co_mention_scores(doc_groups)

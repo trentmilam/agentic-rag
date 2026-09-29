@@ -3,7 +3,7 @@ so a caller can decide whether to hunt for more sources before finalizing it.
 
 This is the Consilium-aware sibling of RAGpack's own evidence check
 (``ragpack.evidence.evaluate_evidence`` in
-``projects/RAGpack/src/ragpack/evidence.py``), which judges a flat list of
+``packages/ragpack/src/ragpack/evidence.py``), which judges a flat list of
 ``Hit`` objects by count + top score alone, before any citation gate has run.
 By the time a query has become a Consilium ``Answer``, it has already passed
 through the router (``consilium.router.Router``) and the integrity gate
@@ -11,14 +11,14 @@ through the router (``consilium.router.Router``) and the integrity gate
 actually survived the gate (citations), which were thrown out
 (``Answer.dropped``), and how comfortably the router cleared its own abstain
 floor (``RouteResult.trace["floor"]``). This module reads those
-already-computed signals instead of re-deriving a hit list — same
+already-computed signals instead of re-deriving a hit list, the same
 "detect thin evidence, hunt for more" spirit as RAGpack's primitive, one level
 higher up the stack, closer to what would actually ship in a final answer.
 
-Three independent checks; ANY ONE failing is enough to call the evidence
-insufficient (this is deliberately conservative — a false "sufficient" ships a
-possibly-wrong answer with no second chance, a false "insufficient" just costs
-one extra hunt).
+Three independent checks; any one failing is enough to call the evidence
+insufficient. A false "sufficient" ships a possibly-wrong answer with no
+second chance, while a false "insufficient" costs only one extra hunt, so the
+check errs toward caution.
 """
 from __future__ import annotations
 
@@ -26,12 +26,12 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 # An answer resting on a single citation is one bad chunk away from being
-# silently wrong -- there is no corroboration. Two is the minimum bar for
+# silently wrong: there is no corroboration. Two is the minimum bar for
 # "more than one independent thing agrees with this."
 MIN_CITATIONS = 2
 
 # If over half of the raw retrieved claims failed the integrity gate, the raw
-# retrieval was already thin before hardening ran -- the survivors are the
+# retrieval was already thin before hardening ran. The survivors are the
 # exception, not the rule, even if there happen to be enough of them.
 MAX_DROPPED_RATIO = 0.5
 
@@ -46,9 +46,9 @@ class AnswerLike(Protocol):
     """Structural contract for a Consilium ``Answer`` (see
     ``consilium.composer.Answer``).
 
-    Deliberately a ``Protocol``, not an import of the real dataclass: this
-    module never needs to import consilium at runtime, and a test can hand it
-    any object -- a real ``Answer``, a hand-built fixture, a plain namespace --
+    A ``Protocol`` rather than an import of the real dataclass, since this
+    module never needs to import consilium at runtime: a test can hand it
+    any object (a real ``Answer``, a hand-built fixture, a plain namespace)
     exposing these three attributes.
     """
 
@@ -87,10 +87,10 @@ def evaluate(
     """Judge whether ``answer`` (routed via ``route_result``) clears a minimum
     bar of citation count, integrity-gate survival rate, and router margin.
 
-    An explicitly abstained answer (either ``answer.abstained`` or
-    ``route_result.abstained`` -- Consilium sets both together, but both are
-    checked so this function is robust to a caller that only has one) is
-    ALWAYS insufficient, independent of the three numeric checks: there is no
+    An explicitly abstained answer, either ``answer.abstained`` or
+    ``route_result.abstained`` (Consilium sets both together, but both are
+    checked so this function is robust to a caller that only has one), is
+    always insufficient, independent of the three numeric checks: there is no
     evidence to score in the first place.
     """
     citation_count = len(answer.citations)

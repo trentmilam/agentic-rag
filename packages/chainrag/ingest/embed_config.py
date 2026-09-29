@@ -2,7 +2,7 @@
 
 Both the ingest pipeline (writes vectors) and the app/eval (Consilium's Router needs
 a live embedder for query-time embed_one() calls) MUST use the exact same model and
-device -- a mismatch produces silently meaningless cosine scores with no error.
+device; a mismatch produces silently meaningless cosine scores with no error.
 Import SETTINGS/get_embedder/get_qdrant_client from here, nowhere else.
 """
 from __future__ import annotations
@@ -24,8 +24,8 @@ def _register_cuda_dll_dir() -> None:
     installable in reasonable time on a constrained connection (the matching
     nvidia-cudnn-cu12 wheel alone is >700MB). torch's own CUDA wheel already
     ships a matched, working copy of both (installing torch is required anyway
-    for EasyOCR) -- point PATH at torch's lib dir instead of a second download.
-    No-op if torch isn't installed or on non-Windows."""
+    for EasyOCR), so this points PATH at torch's lib dir instead of a second
+    download. No-op if torch isn't installed or on non-Windows."""
     if sys.platform != "win32":
         return
     try:
@@ -42,7 +42,7 @@ _register_cuda_dll_dir()
 
 def _normalize_qdrant(qdrant: str) -> str:
     """A relative CHAINRAG_QDRANT override is otherwise resolved against whatever
-    the *current process's* cwd happens to be -- two processes launched from
+    the *current process's* cwd happens to be: two processes launched from
     different directories would silently open two different, unrelated on-disk
     stores. Absolute paths and the special :memory:/http(s):// forms pass through
     unchanged."""
@@ -61,7 +61,7 @@ SETTINGS = Settings(
 
 
 def get_embedder():
-    """The one real embedder instance -- construct once, reuse across ingest+query."""
+    """The one real embedder instance: construct once, reuse across ingest+query."""
     from ragpack.embed import Embedder, HashEmbedder
 
     if (SETTINGS.model or "").strip().lower() == "hash":
@@ -103,11 +103,11 @@ def record_embedder_marker(*, recreate: bool = False) -> None:
 def verify_embedder_marker() -> None:
     """Call before querying (e.g. from build_registry()). Raises if this
     process's configured model doesn't match the model that created the
-    collection on disk -- the embedder-consistency contract this module's
+    collection on disk: the embedder-consistency contract this module's
     docstring promises, actually enforced."""
     marker = _marker_path()
     if marker is None or not marker.exists():
-        return  # in-memory/remote store, or no ingest has run yet -- nothing to check
+        return  # in-memory/remote store, or no ingest has run yet: nothing to check
     recorded = json.loads(marker.read_text(encoding="utf-8")).get("model")
     model_name = (SETTINGS.model or "").strip()
     if recorded and recorded != model_name:

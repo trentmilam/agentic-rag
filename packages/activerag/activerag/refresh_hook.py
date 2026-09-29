@@ -1,48 +1,50 @@
-"""make_refresh_and_research: the REAL, live implementation of the
+"""make_refresh_and_research: the real, live implementation of the
 ``refresh_and_research`` hook :mod:`activerag.orchestrator` only takes as an
 injected callable (the orchestrator owns control flow only and leaves the live
-embedder/Qdrant/registry wiring to this closure -- see its "Injection point for
+embedder/Qdrant/registry wiring to this closure; see its "Injection point for
 the real registry" docstring section).
 
 Given a query, the source type just hunted, and the freshly-hunted document
-paths, the real hook:
+paths, the real hook does four things:
 
-1. **Places the hunted files** where agentic-rag's own ingest pipeline expects
-   them -- copied into ``<agentic-rag>/data/raw/<source_type>/`` under their
-   own filename. This repo never invents a parallel ingest path: it reuses
+1. Places the hunted files where agentic-rag's own ingest pipeline expects
+   them: copied into ``<agentic-rag>/data/raw/<source_type>/`` under their
+   own filename. This repo never invents a parallel ingest path; it reuses
    ``ingest.run_ingest.run()`` verbatim, the exact same batch ingest agentic-rag's
    own corpus fetch uses, which only re-embeds files whose content hash changed
-   (``ingest/state.py``) -- so re-running it after one new file lands is cheap
+   (``ingest/state.py``), so re-running it after one new file lands is cheap
    relative to a from-scratch ingest. A hunted file must already be named to
-   match its source type's connector (e.g. ``rfcNNNN.txt`` for ``rfc_text`` --
+   match its source type's connector (e.g. ``rfcNNNN.txt`` for ``rfc_text``;
    see ``ingest/connectors/rfc_text.py``); if it isn't, ``connector.extract()``
-   raises, and that is the correct, honest failure -- this hook does not
+   raises, and that is the correct, honest failure. This hook does not
    silently rename or reshape a hunted document to fit.
-2. **Refreshes the registry** via the injected :class:`~activerag.registry_bridge.
-   RegistryBridge` (already covers "rebuild + wholesale swap" -- reused, not
+2. Refreshes the registry via the injected :class:`~activerag.registry_bridge.
+   RegistryBridge` (already covers "rebuild + wholesale swap", reused, not
    re-implemented).
-3. **Re-answers the query** through the same real primitives
-   ``consilium.compute.answer_v3`` uses internally for its text path --
-   ``Router.route()`` then ``composer.compose(..., harden=True)`` -- rather
+3. Re-answers the query through the same real primitives
+   ``consilium.compute.answer_v3`` uses internally for its text path,
+   ``Router.route()`` then ``composer.compose(..., harden=True)``, rather
    than through ``answer_v3`` itself, because :func:`activerag.evidence.evaluate`
    needs the raw ``Answer``/``RouteResult`` objects (``.citations``, ``.dropped``,
    ``.trace``), not ``answer_v3``'s already-summarized dict (whose ``"citations"``
    key is a count, not a list).
-4. **Re-evaluates the evidence** via :func:`activerag.evidence.evaluate` and
+4. Re-evaluates the evidence via :func:`activerag.evidence.evaluate` and
    returns the resulting :class:`~activerag.evidence.EvidenceVerdict`.
 
 Each of these four steps is an already-independently-tested real primitive
 (agentic-rag's own ingest tests, a live ``RegistryBridge`` smoke test, the
-full ``eval_agenticrag.py`` PASS, and ``evidence.py``'s own fixture suite). Matching this codebase's own established idiom (``RegistryBridge``
+full ``eval_agenticrag.py`` pass, and ``evidence.py``'s own fixture suite).
+Matching this codebase's own established idiom (``RegistryBridge``
 injects ``build_registry``; ``orchestrator`` injects ``gate``/``hunt_sources``/
 ``refresh_and_research`` itself), the four real callables this glue drives are
-themselves injectable constructor parameters, defaulting to the real ones --
+themselves injectable constructor parameters, defaulting to the real ones,
 so :func:`test_refresh_hook.py` can prove call order and data flow against
 fakes, hermetically, without re-proving what each primitive already proved for
-real elsewhere. A full live chain (real hunt -> real ingest -> real reingest ->
-real re-answer, all in one run) is a natural follow-up if a genuinely new,
-previously-unseen document is ever available to hunt with; the corpus already
-ingested has nothing left un-ingested to manufacture that case honestly.
+real elsewhere. A full live chain (real hunt, then real ingest, then real
+reingest, then real re-answer, all in one run) is a natural follow-up if a
+genuinely new, previously-unseen document is ever available to hunt with; the
+corpus already ingested has nothing left un-ingested to produce that case for
+real, without fabricating a document.
 """
 from __future__ import annotations
 
@@ -58,7 +60,7 @@ from activerag.evidence import EvidenceVerdict, evaluate as evaluate_evidence  #
 from activerag.registry_bridge import RegistryBridge  # noqa: E402
 
 # The repo root itself. This was ``PROJECTS_ROOT / "agentic-rag"`` back when agentic-rag
-# was the checkout next door; after the merge that expression still resolved -- but only
+# was the checkout next door; after the merge that expression still resolved, but only
 # because the working copy happens to be named agentic-rag. Cloned under any other
 # directory name it would have pointed at nothing, and ``mkdir(parents=True)`` below
 # would have created that nothing rather than failing.

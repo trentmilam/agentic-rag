@@ -7,7 +7,7 @@ from ragpack.extract import extract_text, is_garbled
 
 def _write_text_layer_pdf(path, text):
     """Hand-build the smallest valid one-page PDF whose content stream shows ``text`` via a
-    Tj operator, so pypdf's real text-layer extraction runs against real PDF bytes -- no
+    Tj operator, so pypdf's real text-layer extraction runs against real PDF bytes, with no
     reportlab/fpdf dependency needed for a minimal fixture.
     """
     content = f"BT /F1 12 Tf 72 700 Td ({text}) Tj ET".encode("latin-1")
@@ -54,10 +54,10 @@ def test_extract_text_missing_file_raises_filenotfound(tmp_path):
 
 
 def test_extract_text_reads_pdf_text_layer(tmp_path):
-    # regression: the PDF text-layer path (_pypdf_text via extract_text) had zero coverage --
+    # regression: the PDF text-layer path (_pypdf_text via extract_text) had zero coverage:
     # nothing ever exercised pypdf against a real PDF. 200+ printable chars keeps is_garbled()
     # False, proving the default ocr="auto" reads the text layer straight through and never
-    # even attempts to import docTR (which isn't installed in this job -- see test_ocr.py).
+    # even attempts to import docTR (which isn't installed in this job; see test_ocr.py).
     text = (
         "RAGpack extracts the text layer of a real PDF using pypdf. This sentence is padded "
         "well past the two hundred character floor so the garbled-text heuristic sees it as "

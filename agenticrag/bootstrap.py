@@ -3,7 +3,7 @@
 Assembles agentic-rag's own Registry: one Consilium Module per real source
 type in the ingested IETF corpus (rfc_text, rfc_index, errata, iana_registry),
 each loaded straight from the shared Qdrant collection (see
-``registry_loader.load_module_from_qdrant`` -- no re-embedding, no synthetic
+``registry_loader.load_module_from_qdrant``: no re-embedding, no synthetic
 fixtures), plus ``SupersessionModule``, a compute capability that answers the
 one real question the retrieval modules alone cannot: which real RFC(s)
 obsoleted a given one.
@@ -57,7 +57,7 @@ DESCRIPTORS = {
                   "metadata, one card per RFC",
         freshness="static snapshot of the live rfc-index.txt as of ingest date",
         # Authoritative metadata, but a rendered catalog card rather than the
-        # normative text itself -- one tier below rfc_text.
+        # normative text itself: one tier below rfc_text.
         trust_tier=0.9,
     ),
     "errata": Descriptor(
@@ -78,7 +78,7 @@ DESCRIPTORS = {
         # n=5061 real errata records): Verified 2400 (47.4%), Held for Document
         # Update 1781 (35.2%), Rejected 679 (13.4%), Reported 201 (4.0%). Fewer
         # than half of real submitted errata are RFC-Editor-confirmed, and a
-        # real ~13% are outright Rejected -- so this module corrects the
+        # real ~13% are outright Rejected, so this module corrects the
         # primary text but is not itself uniformly authoritative the way
         # rfc_text/rfc_index are; trust_tier sits well below both.
         trust_tier=0.55,
@@ -117,20 +117,20 @@ SUPERSESSION_DESCRIPTOR = Descriptor(
               "(data/entities/revisions.json) -- a deterministic graph walk, no LLM",
     freshness="static snapshot of the live rfc-index.txt supersession graph as of "
               "ingest date",
-    # A deterministic exact-graph lookup, not a heuristic -- same tier as
+    # A deterministic exact-graph lookup, not a heuristic: same tier as
     # rfc_text's normative-source tier.
     trust_tier=0.95,
 )
 
 # consilium.router.Router's stated defaults (floor=0.11, anchor_centroid=0.25,
 # anchor_best_chunk=0.25) assume a near-zero baseline cosine between unrelated
-# text -- true for a bag-of-words HashEmbedder, false for a real dense embedder
+# text: true for a bag-of-words HashEmbedder, false for a real dense embedder
 # (BAAI/bge-base-en-v1.5) over this 321k-chunk corpus. MEASURED directly
 # against this real corpus + real embedder (see eval/eval_agenticrag.py's
 # printed calibration numbers, and agenticrag/calibrate.py which produced
 # them): every genuine in-scope query's anchor module clears both a real
 # centroid-cosine floor and a real subject-token-overlap floor well above the
-# library defaults, while the out-of-scope probe never does -- but best-chunk
+# library defaults, while the out-of-scope probe never does, but best-chunk
 # cosine (a max over tens/hundreds of thousands of chunks per module) is a
 # saturated order statistic that clears 0.25 for nearly any query, including
 # the out-of-scope one, so it is not usable as an anchor signal at this
@@ -151,8 +151,8 @@ def build_registry(embedder, client=None) -> Registry:
     once, for exact poison-quarantine (see ``qdrant_retrieval``). The 5th module is
     the in-process ``SupersessionModule``.
 
-    Because the modules query Qdrant LIVE, the client is NOT closed here on success
-    -- it lives for the caller's process (build a Router with :func:`build_router`,
+    Because the modules query Qdrant LIVE, the client is NOT closed here on success:
+    it lives for the caller's process (build a Router with :func:`build_router`,
     serve queries, let the process own the client). A client this function opened
     itself is closed only if the build FAILS; a caller-supplied client is always
     left to the caller.
@@ -163,7 +163,7 @@ def build_registry(embedder, client=None) -> Registry:
     from agenticrag.qdrant_retrieval import QdrantModule, load_salient_chunks_by_source
 
     # Fail LOUD if this process's configured embedder is not the one that
-    # ingested the store -- otherwise every cosine score is silently meaningless
+    # ingested the store, because otherwise every cosine score is silently meaningless
     # (see embed_config.verify_embedder_marker). This is the one place every
     # query entrypoint (app.py / run_demo.py / mcp.server) funnels through.
     verify_embedder_marker()
@@ -216,7 +216,7 @@ def build_router(registry, embedder):
     """The Router every agentic-rag entrypoint serves with: a
     :class:`~agenticrag.qdrant_retrieval.QdrantRouter` (consilium's routing formula,
     best-chunk delegated to Qdrant) wired with this repo's measured ``ROUTER_KWARGS``
-    calibration -- so the Qdrant-native path and the calibration always travel
+    calibration, so the Qdrant-native path and the calibration always travel
     together."""
     from agenticrag.qdrant_retrieval import QdrantRouter
 

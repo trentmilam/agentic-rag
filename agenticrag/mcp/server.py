@@ -1,14 +1,14 @@
-"""agentic-rag MCP server -- exposes the repo's real RAG answer path as MCP tools.
+"""agentic-rag MCP server: exposes the repo's real RAG answer path as MCP tools.
 
 Additive scaffold: this module adds an MCP surface *on top of* the existing
 answer path (``consilium.compute.answer_v3`` over agentic-rag's own Qdrant-backed
 Registry, exactly as ``app.py`` wires it). It changes nothing about how answers
-are computed -- ``search`` is a thin, faithful wrapper.
+are computed; ``search`` is a thin, faithful wrapper.
 
 Layering (deliberate, so this file is importable/unit-testable *without* the
 ``mcp`` package installed and *without* ever opening Qdrant):
 
-* Module top level imports nothing heavy -- only the sibling-path bootstrap. In
+* Module top level imports nothing heavy, only the sibling-path bootstrap. In
   particular it does NOT ``import mcp`` and does NOT build the Registry. Importing
   this module must never touch Qdrant (agentic-rag's local-mode store may be held
   open by a concurrent eval run; a second opener crashes both).
@@ -17,12 +17,12 @@ Layering (deliberate, so this file is importable/unit-testable *without* the
   context. Tests drive these directly with hand-built fakes.
 * The real embedder/Registry/Router are built exactly once, at *server startup*,
   inside :func:`build_context` (mirroring ``app.py``'s module-level EMBEDDER/
-  REGISTRY/ROUTER pattern -- but here it is startup-time, never import-time).
+  REGISTRY/ROUTER pattern, but here it is startup-time, never import-time).
 * The ``mcp`` wiring lives entirely inside :func:`main`, imported lazily. ``mcp``
   is not yet a dependency of this repo (see the note in :func:`main`).
 
 Transport decision (documented; no precedent in this repo cluster either way):
-**stdio** -- the simplest transport for a single-user local demo. The MCP client
+**stdio**, the simplest transport for a single-user local demo. The MCP client
 launches this process and speaks the protocol over stdin/stdout; no port, no
 network listener, no auth surface. If a multi-client or remote deployment is ever
 needed, FastMCP also offers HTTP/SSE transports; revisit then. Flagged for review.
@@ -53,7 +53,7 @@ def build_context() -> RagContext:
 
     WARNING: this opens the real embedder and the shared Qdrant collection. Call
     it only from real server startup (:func:`main`). Never call it from a unit
-    test -- the tests build a :class:`RagContext` from fakes instead.
+    test; the tests build a :class:`RagContext` from fakes instead.
     """
     from agenticrag.bootstrap import build_registry, build_router
     from agenticrag.embed_config import get_embedder
@@ -71,7 +71,7 @@ def build_context() -> RagContext:
 def tool_search(query: str, ctx: RagContext) -> dict:
     """Answer a natural-language query over the real IETF RFC/errata/IANA corpus.
 
-    A thin, faithful wrapper over ``consilium.compute.answer_v3`` -- the exact
+    A thin, faithful wrapper over ``consilium.compute.answer_v3``, the exact
     call ``app.py`` makes. Its return dict is passed back **verbatim**, including
     an honest ``{"kind": "abstain", ...}`` result: an abstain means nothing in the
     corpus supported an answer, and it must never be papered over here.
@@ -82,13 +82,13 @@ def tool_search(query: str, ctx: RagContext) -> dict:
 
 
 def _call_bridge(tool: str, fn_name: str, *args, **kwargs) -> dict:
-    """Dispatch to ``agenticrag.relationships`` -- a real, working linkgraph-backed
+    """Dispatch to ``agenticrag.relationships``, a real, working linkgraph-backed
     bridge (verified against real IETF RFC/errata/IANA data; no Qdrant dependency,
     reads ``data/entities/candidates.jsonl`` directly).
 
     Returns ONE stable dict shape either way, so an MCP client parses the same
     envelope on success and failure (the underlying bridge functions return bare
-    ``list``s / ``dict``s of differing shapes -- wrapping them here is what makes
+    ``list``s / ``dict``s of differing shapes; wrapping them here is what makes
     every relationship tool's declared ``-> dict`` contract honest):
 
     * success  -> ``{"ok": True,  "tool": <tool>, "result": <bridge return>}``
@@ -96,7 +96,7 @@ def _call_bridge(tool: str, fn_name: str, *args, **kwargs) -> dict:
 
     The lazy import + defensive guards stay regardless: if that module isn't
     importable, doesn't expose ``fn_name``, or the call raises, return the failure
-    envelope instead of propagating -- one broken tool must never crash the server.
+    envelope instead of propagating. One broken tool must never crash the server.
     """
     try:
         from agenticrag import relationships
@@ -126,7 +126,7 @@ def tool_get_related(entity_id: str, max_hops: int = 1, min_score: float = 0.0,
     ``agenticrag.relationships.get_related`` passthrough to ``LinkGraph``.
 
     ``entity_id`` must be a FULL node id (e.g. ``"rfc:RFC2616"`` or
-    ``"errata:1483"``), matching ``relationships.get_related``'s own contract --
+    ``"errata:1483"``), matching ``relationships.get_related``'s own contract,
     unlike ``rfc_id`` in :func:`tool_get_obsoletion_chain`/
     :func:`tool_get_corrections` below, which take a bare id.
 
@@ -147,7 +147,7 @@ def tool_get_obsoletion_chain(rfc_id: str) -> dict:
 
     On success returns ``{"ok": True, "tool": "get_obsoletion_chain", "result":
     {"history": [...], "status": ...}}``; if the bridge is ever unimportable or
-    raises, returns the failure envelope -- and the hint is exactly right here:
+    raises, returns the failure envelope, and the hint is exactly right here:
     ``search`` also answers direct obsoletion questions via the deterministic
     supersession module."""
     return _call_bridge("get_obsoletion_chain", "get_obsoletion_chain", rfc_id)
@@ -175,14 +175,14 @@ def main() -> None:
     Verified against the real installed SDK (``mcp==1.28.1``, see
     ``agenticrag/requirements.txt``): ``FastMCP(name)``, the ``@server.tool()``
     decorator, and ``server.run(transport="stdio")`` all match its real API
-    (checked via ``inspect.signature`` and a live tool-registration smoke test --
+    (checked via ``inspect.signature`` and a live tool-registration smoke test;
     no live Qdrant/embedder needed for that check). The import stays lazy here
     regardless, so the tool logic and its tests keep running with ``mcp`` absent
     if it's ever uninstalled.
 
     (The subpackage is named ``agenticrag.mcp``; ``from mcp...`` below is an
     absolute import and resolves to the installed top-level ``mcp`` SDK, not this
-    subpackage -- worth re-confirming once the SDK is actually installed.)
+    subpackage, worth re-confirming once the SDK is actually installed.)
 
     Tools deliberately NOT exposed: ``export_graphrx_graph`` (a different
     downstream consumer's interchange format) and raw ``Router.route`` (an internal

@@ -5,7 +5,7 @@ Every connector's ``extract()`` always runs (cheap, no I/O beyond one file read)
 chunk+embed+upsert steps are skipped for files whose content hash matches
 ``data/state.json`` from the previous run.
 
-This never fetches anything over the network itself -- ``python -m
+This never fetches anything over the network itself: ``python -m
 corpus_fetch.fetch_all`` is a distinct, explicit, separately-run step that must
 already have populated ``data/raw/`` before ``run()`` is called.
 """
@@ -44,7 +44,7 @@ CONNECTORS = {
 }
 
 # The embed/upsert loop is the heavy step (minutes on a small corpus, hours on the
-# full 321k-chunk one) with no other output of its own -- print a heartbeat at most
+# full 321k-chunk one) with no other output of its own, so print a heartbeat at most
 # this often so a long run reads as progress, not a hang.
 _PROGRESS_INTERVAL_SECS = 15
 
@@ -86,13 +86,13 @@ def _entity_ids_in_chunk(entities: list[EntityRef], chunk: str) -> list[str]:
 
 
 def _is_current(doc: ExtractedDoc, revisions_index: dict) -> bool:
-    """A document with no single-revision concept (an erratum, an IANA registry --
+    """A document with no single-revision concept (an erratum, an IANA registry:
     neither names one specific RFC revision the way a procedure once named one part
     revision) is never stale as a WHOLE document, so it defaults current=True.
 
     For an ``rfc_text``/``rfc_index`` document (``doc.part_number`` holds
     ``f"RFC{n}"``), currency is the real fact the IETF supersession graph records:
-    current iff nothing obsoletes it (``obsoleted_by`` is empty) -- not a
+    current iff nothing obsoletes it (``obsoleted_by`` is empty), not a
     part+revision-equality check like the old pump-corpus domain used, since RFC full
     text has no "revision" of its own; a new number entirely replaces it.
     """
@@ -109,7 +109,7 @@ def _is_current(doc: ExtractedDoc, revisions_index: dict) -> bool:
 
 def _force_clear_local_collection() -> None:
     """qdrant-client's local-mode ``delete_collection`` does
-    ``shutil.rmtree(path, ignore_errors=True)`` -- on Windows this can silently fail
+    ``shutil.rmtree(path, ignore_errors=True)``. On Windows this can silently fail
     (transient file lock) and leave the old collection directory in place, so a
     "recreated" collection actually re-attaches to old data instead of starting empty.
     Delete the physical directory ourselves first, with errors surfaced instead of
@@ -133,12 +133,12 @@ def run(*, recreate: bool = False, data_dir: Path | None = None) -> IngestReport
         str(path.relative_to(data_dir)).replace("\\", "/"): _file_hash(path)
         for _, path in all_files
     }
-    # recreate=True means "rebuild everything" -- honoring a stale watermark here would
+    # recreate=True means "rebuild everything": honoring a stale watermark here would
     # skip re-embedding into what is now a freshly emptied collection, silently leaving
     # it empty. Treating every file as new when recreating keeps --recreate trustworthy.
     old_state = {} if recreate else load_state(state_path)
     # changed_files round-trips each key through Path, which normalizes to native
-    # (backslash, on Windows) separators on str() -- re-flip to forward slashes so
+    # (backslash, on Windows) separators on str(); re-flip to forward slashes so
     # this set compares equal to the forward-slash-normalized `rel` keys below.
     changed = {str(p).replace("\\", "/") for p in changed_files(hashes, old_state)}
 
@@ -152,8 +152,8 @@ def run(*, recreate: bool = False, data_dir: Path | None = None) -> IngestReport
     if recreate:
         _force_clear_local_collection()
 
-    # The full live index (all 9,000+ RFCs, not just the text-fetch subset) -- a
-    # supersession chain can point outside the subset, and it's cheap: just a
+    # The full live index (all 9,000+ RFCs, not just the text-fetch subset) matters
+    # because a supersession chain can point outside the subset, and it's cheap: just a
     # local-file re-parse, no network call.
     full_index = parse_rfc_index(raw_dir / "_cache" / "rfc-index.txt")
     revisions_index = rfc_index.build_revisions_index(full_index)

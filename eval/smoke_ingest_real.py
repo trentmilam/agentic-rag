@@ -55,7 +55,7 @@ def _point_count() -> int:
 
 
 def _scroll_payloads(source_type: str) -> list[dict]:
-    """Payloads for one source_type only -- real scale here is hundreds of thousands
+    """Payloads for one source_type only. Real scale here is hundreds of thousands
     of points total, so this filters server-side and scrolls in batches rather than
     pulling everything into memory at once."""
     from qdrant_client.models import FieldCondition, Filter, MatchValue

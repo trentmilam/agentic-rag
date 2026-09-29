@@ -26,7 +26,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 # Every package that lives under packages/ and is reachable only via the editable
-# install. A missing one means `pip install -e .` has not been run -- say so once,
+# install. A missing one means `pip install -e .` has not been run; say so once,
 # clearly, instead of letting each test module raise its own ModuleNotFoundError.
 _MERGED = ("consilium", "ragpack", "linkgraph", "activerag", "chainrag")
 
@@ -38,10 +38,10 @@ def _diagnose(name: str) -> str:
     Two distinct failures, both of which produce a green test run against code that is
     not the code in this checkout:
 
-    * An implicit namespace package has a spec but no ``origin`` -- what a bare
+    * An implicit namespace package has a spec but no ``origin``: what a bare
       directory of the same name produces. This repo hit exactly that when the merged
       packages sat at the top level and shadowed themselves.
-    * A spec whose ``origin`` points somewhere else -- a leftover editable install still
+    * A spec whose ``origin`` points somewhere else: a leftover editable install still
       aimed at the old separate repository next door. That one is worse: it is a real,
       importable, plausible-looking package, so the suite passes green against source
       that is not the source being edited. It is how this repo's own first post-merge

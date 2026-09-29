@@ -4,11 +4,11 @@ IANA registry XML (``xml.etree.ElementTree``, stdlib) is a ``<registry>`` root t
 either holds ``<record>`` elements directly (e.g. ``service-names-port-numbers.xml``,
 one flat 14k+-row table) or nests further ``<registry>`` sub-sections, each with its
 own title and its own records and often its own DIFFERENT set of columns (e.g.
-``dns-parameters.xml`` has 24 sub-registries -- "DNS CLASSes", "Resource Record (RR)
+``dns-parameters.xml`` has 24 sub-registries: "DNS CLASSes", "Resource Record (RR)
 TYPEs", etc). :func:`_collect_sections` walks that real structure so each section
 gets its own heading + table instead of forcing mismatched columns into one table.
 
-One :class:`EntityRef` per *registry file*, not per row -- IANA rows aren't
+One :class:`EntityRef` per *registry file*, not per row. IANA rows aren't
 individually cross-referenced by other source types the way, say, an errata's RFC
 number is, so a per-row entity would just be unused volume.
 """

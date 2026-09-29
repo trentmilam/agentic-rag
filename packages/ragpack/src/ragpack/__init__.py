@@ -1,4 +1,4 @@
-"""ragpack — mill documents into a searchable vector store.
+"""ragpack: mill documents into a searchable vector store.
 
 Extract (text + optional GPU OCR) → chunk → embed (CPU or CUDA) → Qdrant → search.
 

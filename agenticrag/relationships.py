@@ -1,7 +1,7 @@
 """Thin passthrough bridge from agentic-rag into linkgraph's real, tested
 relationship graph (built from the same real candidates.jsonl the corpus's
 own entity-extraction produced). Kept deliberately separate from
-SupersessionModule -- both answer "what obsoleted RFC X" from independently
+SupersessionModule: both answer "what obsoleted RFC X" from independently
 built sources over the same underlying IETF facts, kept separate on purpose so
 they can be cross-checked against each other (e.g. RFC 2616's real 6-way
 obsoletion into RFC 7230-7235 should agree in both).
@@ -26,7 +26,7 @@ def _graph() -> LinkGraph:
     """Build the single process-wide ``LinkGraph`` on first use and cache it.
 
     Deferred to first call (rather than import time) so importing this module
-    never does file I/O -- it stays safe to import before an ingest has
+    never does file I/O: it stays safe to import before an ingest has
     produced the file.
     """
     global _GRAPH

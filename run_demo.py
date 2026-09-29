@@ -1,14 +1,14 @@
-"""agentic-rag LIVE DEMO -- a scripted, narrated transcript over the real,
+"""agentic-rag LIVE DEMO: a scripted, narrated transcript over the real,
 already-ingested IETF RFC/errata/IANA corpus (321,124 chunks) plus the real
 Obsoletes/Obsoleted-by supersession graph.
 
-    cd projects/agentic-rag
+    cd agentic-rag
     .venv/Scripts/python.exe run_demo.py
 
-Three real questions, in order: the RFC 2616 (HTTP/1.1) obsoletion question --
-IETF's own famous real 6-way supersession case, answered by the deterministic
-SupersessionModule, not retrieval -- one ordinary cited-retrieval question, and
-one question with nothing to do with this corpus. No mocked output -- every
+Three real questions, in order: the RFC 2616 (HTTP/1.1) obsoletion question
+(IETF's own famous real 6-way supersession case, answered by the deterministic
+SupersessionModule, not retrieval), one ordinary cited-retrieval question, and
+one question with nothing to do with this corpus. No mocked output: every
 line below is produced live by the real router + the real citation-gated
 composer / audited compute dispatch, reusing the exact queries proven in
 eval/eval_agenticrag.py. Deterministic + offline beyond the local Qdrant read
@@ -66,9 +66,9 @@ def main() -> int:
     registry = build_registry(embedder)
     router = build_router(registry, embedder)
 
-    # Q1 -- the real, famous multi-way obsoletion case: RFC 2616 (HTTP/1.1) was
+    # Q1: the real, famous multi-way obsoletion case. RFC 2616 (HTTP/1.1) was
     # entirely superseded by six later RFCs, not one. There is no "current
-    # revision" of RFC 2616's own text to retrieve -- SupersessionModule is the
+    # revision" of RFC 2616's own text to retrieve; SupersessionModule is the
     # correct, explicit path to this real fact (see eval/prove_revision_guard.py
     # for the full structural-exclusion proof).
     a1 = ask(router, registry, embedder, 1,
@@ -82,11 +82,11 @@ def main() -> int:
                 successors = c["audited"]["result"]["successors"]
     print(f"     real successors: {sorted(successors) if successors else successors}")
 
-    # Q2 -- an ordinary cited-retrieval question over the real RFC full text.
+    # Q2: an ordinary cited-retrieval question over the real RFC full text.
     ask(router, registry, embedder, 2,
         "How does IP fragmentation and reassembly work in the Internet Protocol?")
 
-    # Q3 -- nothing to do with this corpus. Intended behavior is an honest
+    # Q3: nothing to do with this corpus. Intended behavior is an honest
     # abstain; ask() above prints whatever the live system actually does.
     ask(router, registry, embedder, 3,
         "What's the best way to season a cast iron skillet before first use?")

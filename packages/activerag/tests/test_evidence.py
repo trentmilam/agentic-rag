@@ -1,10 +1,10 @@
 """Tests for activerag.evidence.
 
 Built entirely against hand-constructed fixture ``Answer``/``RouteResult``
-objects -- no Consilium instantiation, no embedder, no real modules. The
+objects: no Consilium instantiation, no embedder, no real modules. The
 fixtures below mirror the real ``consilium.composer.Answer`` /
 ``consilium.router.RouteResult`` field shapes (see
-``projects/consilium/consilium/{composer.py,router.py}``) but are plain local
+``packages/consilium/consilium/{composer.py,router.py}``) but are plain local
 dataclasses, matching ``activerag.evidence``'s structural (``Protocol``-based)
 contract.
 """
@@ -57,7 +57,7 @@ def _healthy_answer_and_route():
 
 
 def test_abstained_answer_is_always_insufficient_regardless_of_other_fields():
-    # Plenty of citations, no drops, huge margin -- but abstained=True must
+    # Plenty of citations, no drops, huge margin, but abstained=True must
     # override all three numeric checks.
     citations = [FakeCitation("c1"), FakeCitation("c2"), FakeCitation("c3")]
     answer = FakeAnswer(citations=citations, dropped=[], abstained=True)

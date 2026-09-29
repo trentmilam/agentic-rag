@@ -1,4 +1,4 @@
-"""SQLite persistence for the ``LinkGraph`` -- ``linkdb.sqlite``.
+"""SQLite persistence for the ``LinkGraph``: ``linkdb.sqlite``.
 
 Schema, kept simple and matching the in-memory model 1:1:
 
@@ -7,7 +7,7 @@ Schema, kept simple and matching the in-memory model 1:1:
     communities(community_id, node_id)  -- PK(community_id, node_id)
 
 ``communities`` is a membership index that is otherwise recoverable from
-``entities.community`` -- it exists so "every member of community N" is a
+``entities.community``; it exists so "every member of community N" is a
 plain indexed lookup rather than a full-table scan, and ``save_graph`` always
 DERIVES it fresh from ``entities.community``, so the two can never drift out
 of sync with each other.
@@ -48,9 +48,9 @@ def init_db(conn: sqlite3.Connection) -> None:
 
 
 def save_graph(graph: LinkGraph, db_path: str) -> None:
-    """Overwrite ``db_path`` with the current graph state (drop + recreate
-    all three tables, then write everything fresh -- simplest correct
-    behavior for a showcase-scale graph; no incremental-update path).
+    """Overwrite ``db_path`` with the current graph state: drop and recreate
+    all three tables, then write everything fresh. Simplest correct behavior
+    for a demo-scale graph; there is no incremental-update path.
     """
     conn = sqlite3.connect(db_path)
     try:

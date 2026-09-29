@@ -1,18 +1,18 @@
-"""Consilium CORE eval — additive interfaces (capability.py, generalized
+"""Consilium CORE eval: additive interfaces (capability.py, generalized
 ComputeModule, Registry.load "kind" dispatch, answer_v3 fan-out). Exit 0 on pass.
 
     python eval/eval_core.py
 
-Three red-cases (the generalized compute-module interface -- capability protocol,
+Three red-cases (the generalized compute-module interface: capability protocol,
 Registry.load "kind" dispatch, answer_v3 fan-out):
   (a) back-compat: a query that anchors exactly one compute module (no text module)
-      still returns the ORIGINAL v3 shape ({"kind":"compute","module":...,"audited":...})
-      -- eval_v3.py:30-32 must keep passing.
+      still returns the ORIGINAL v3 shape ({"kind":"compute","module":...,"audited":...});
+      eval_v3.py:30-32 must keep passing.
   (b) mixed fan-out: a query that anchors a compute module AND a retrieval module
       returns kind=="mixed" with BOTH computed[] and a retrieval answer populated.
   (c) generic disk registration: a throwaway kind:"compute" module (descriptor.json
       + an "adapter" class, no consilium/sibling-repo coupling) loads through
-      Registry.load(..., allow_compute_adapters=True) -- the explicit opt-in a
+      Registry.load(..., allow_compute_adapters=True), the explicit opt-in a
       caller must give before Registry.load will import an adapter class.
 
 Deterministic (pure-python hashing embedder; no randomness, no network).
@@ -73,7 +73,7 @@ def check_mixed_fanout(reg, emb, router):
 
 def check_generic_disk_registration(emb):
     """(c) a throwaway kind:"compute" module (descriptor.json + adapter class) loads
-    through Registry.load via the GENERIC mechanism -- no sibling-repo coupling."""
+    through Registry.load via the GENERIC mechanism, with no sibling-repo coupling."""
     with tempfile.TemporaryDirectory() as tmp:
         modules_dir = os.path.join(tmp, "modules")
         mod_dir = os.path.join(modules_dir, "fixture_compute")

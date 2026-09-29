@@ -1,21 +1,21 @@
-"""Smoke-eval: proves the ingest -> Qdrant -> Consilium wiring is correct
+"""Smoke-eval: proves the ingest-to-Qdrant-to-Consilium wiring is correct
 end-to-end, before investing in the real 15-40 document production corpus.
 
 Two independent stages, each its OWN process invocation:
 
     python eval/smoke_eval.py --stage hash   # zero-cost: deterministic HashEmbedder,
-                                              # no GPU/network -- catches wiring bugs cheaply
+                                              # no GPU/network, catches wiring bugs cheaply
     python eval/smoke_eval.py --stage real   # the real CUDA embedder + OCR, full round-trip
 
 They must be separate invocations, not one script doing both: ingest/embed_config.SETTINGS
 is a module-level object built once at import time from os.environ, so the embedder/qdrant
 config has to be set *before* anything under ingest/ or chainrag/ is ever imported in this
-process -- there is no supported way to swap it mid-process.
+process. There is no supported way to swap it mid-process.
 
 Both stages ingest the 3-document smoke corpus (smoke/sources.smoke.yaml: the Bitcoin
 whitepaper PDF, one EIP HTML page, and a synthetic image-only PDF that only has text via
 OCR) into their own Qdrant collection, then ask one targeted question per document and
-asserts the router selects the right chain and the answer cites the right document --
+assert the router selects the right chain and the answer cites the right document,
 including the OCR'd one, proving OCR text flows through the identical path as born-digital
 text.
 """
@@ -34,7 +34,7 @@ CHECKS = [
     # Query wording matters more than usual here: the "hash" stage uses a crude
     # deterministic bag-of-words HashEmbedder (lexical, not semantic), and the
     # synthetic ocr-fixture doc is a short, dense paragraph specifically about
-    # difficulty adjustment/ten-minute blocks -- so a query using that same
+    # difficulty adjustment/ten-minute blocks, so a query using that same
     # phrasing can out-score the much longer, topically-diluted real whitepaper
     # under crude hashing even when the whitepaper is the "right" answer. Each
     # query below targets content unique to its expected document to keep the
@@ -66,7 +66,7 @@ def main() -> int:
     _configure_env(args.stage)
     sys.path.insert(0, str(ROOT))
 
-    # Imported only now -- after os.environ is set -- so embed_config.SETTINGS picks up
+    # Imported only now, after os.environ is set, so embed_config.SETTINGS picks up
     # this stage's config.
     from chainrag.bootstrap import build_registry
     from consilium.composer import compose
@@ -82,7 +82,7 @@ def main() -> int:
         print(f"  - {d}")
 
     embedder = get_embedder()
-    # The smoke corpus only covers bitcoin + ethereum -- scope build_registry to
+    # The smoke corpus only covers bitcoin + ethereum, so scope build_registry to
     # just those two so it doesn't fail loudly on the 4 chains with no data yet
     # (that fail-loud behavior is exactly right once the full corpus populates all 6).
     registry = build_registry(embedder, chains=["bitcoin", "ethereum"])

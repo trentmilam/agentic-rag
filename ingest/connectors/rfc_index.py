@@ -1,13 +1,13 @@
 """Per-RFC "index card" documents rendered from the real parsed rfc-index.txt.
 
 ``rfc-index.txt`` is one giant file covering every RFC ever issued, but for
-retrieval we want one small, independently-chunkable document per RFC -- so
+retrieval we want one small, independently-chunkable document per RFC, so
 :func:`render_index_cards` (called once from the fetch pipeline, not at query time)
 writes one real-facts-only card per RFC number in the text-fetch range, and
 ``extract()`` reads a card back into an :class:`ExtractedDoc`.
 
 Cards use a fixed line-per-field layout (``Label: value``) rather than the flowing
-sentence style rfc-index.txt itself uses -- real author lists and titles both contain
+sentence style rfc-index.txt itself uses: real author lists and titles both contain
 periods, so a flowing sentence can't be round-tripped unambiguously once *we* are also
 the reader; a labeled line always can.
 
@@ -49,8 +49,8 @@ def _render_card(entry: RfcIndexEntry) -> str:
 
 def render_index_cards(index: dict[int, RfcIndexEntry], rfc_numbers: set[int], out_dir: Path) -> None:
     """Write one ``rfcNNNN.txt`` card per number in ``rfc_numbers`` that has a real
-    entry in ``index`` -- silently skips numbers with no entry (e.g. a number outside
-    the live index's current range), it does not fabricate one."""
+    entry in ``index``. Silently skips numbers with no entry (e.g. a number outside
+    the live index's current range); it does not fabricate one."""
     out_dir.mkdir(parents=True, exist_ok=True)
     for number in sorted(rfc_numbers):
         entry = index.get(number)
@@ -102,7 +102,7 @@ def extract(path: Path) -> ExtractedDoc:
 
 def build_revisions_index(full_index: dict[int, RfcIndexEntry]) -> dict:
     """The authoritative ``{"RFCn": {...}}`` supersession graph over *every* RFC in the
-    live index -- ``run_ingest.py``'s currency check looks entries up here by
+    live index. ``run_ingest.py``'s currency check looks entries up here by
     ``doc.part_number``."""
     return {
         f"RFC{number}": {

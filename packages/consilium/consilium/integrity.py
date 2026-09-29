@@ -34,7 +34,7 @@ def bind_claim(claim: str, embedder, candidate_chunks, floor: float,
          when ``query_vec`` is supplied.
     Condition (2) closes the tautological self-support hole: an extractive claim is
     byte-identical to its own chunk (cosine 1.0), so claim-support alone always
-    passes -- the chunk must ALSO be relevant to what was actually asked, or the
+    passes; the chunk must ALSO be relevant to what was actually asked, or the
     claim is dropped as query-irrelevant rather than emitted with a confident cite.
     """
     cv = embedder.embed_one(claim)

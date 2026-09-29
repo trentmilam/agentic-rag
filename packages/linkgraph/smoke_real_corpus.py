@@ -1,9 +1,9 @@
-"""Proves ``resolve.build_graph`` recovers real graph structure -- including a
-non-zero ``corrects`` edge count -- from the REAL agentic-rag entity-mention
+"""Proves ``resolve.build_graph`` recovers real graph structure, including a
+non-zero ``corrects`` edge count, from the REAL agentic-rag entity-mention
 export, not just the hand-built fixture ``eval.py``/``pytest`` exercise.
 
 Assumes agentic-rag's ingest has already produced
-``agentic-rag/data/entities/candidates.jsonl`` -- this script does not fetch
+``agentic-rag/data/entities/candidates.jsonl``. This script does not fetch
 or ingest anything itself, it only reads that file via linkgraph's own
 ``adapter.load_from_export``.
 
@@ -43,7 +43,7 @@ def main() -> int:
 
     # Every number the README quotes is asserted here, not merely printed. Printing
     # them let the published figures drift from what the code actually produces with
-    # nothing to catch it -- a bare `corrects > 0` passes just as happily on a graph
+    # nothing to catch it: a bare `corrects > 0` passes just as happily on a graph
     # half this size. Update these only alongside the README, and say why.
     EXPECTED_MENTIONS = 21830
     EXPECTED_NODES = 13666

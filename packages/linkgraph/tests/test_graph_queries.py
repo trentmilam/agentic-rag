@@ -5,7 +5,7 @@ real branching + dangling structure in the fixture."""
 def test_get_related_respects_max_hops(graph):
     one_hop = {n for n, _ in graph.get_related("rfc:RFCX9022", max_hops=1)}
     two_hop = {n for n, _ in graph.get_related("rfc:RFCX9022", max_hops=2)}
-    # rfc:RFCX9024 only shares RFCX9010 as a common obsoletes-target with RFCX9022 -- two
+    # rfc:RFCX9024 only shares RFCX9010 as a common obsoletes-target with RFCX9022: two
     # hops away, never one.
     assert "rfc:RFCX9024" not in one_hop
     assert "rfc:RFCX9024" in two_hop
@@ -25,7 +25,7 @@ def test_get_related_edge_types_filter(graph):
 
 
 def test_get_related_min_score_does_not_filter_structural_edges(graph):
-    # obsoletes/updates/corrects are asserted facts, never scored -- an
+    # obsoletes/updates/corrects are asserted facts, never scored, so an
     # arbitrarily high min_score must not drop them.
     related = {n for n, _ in graph.get_related("rfc:RFCX9022", max_hops=1, min_score=1000.0)}
     assert {"rfc:RFCX9010", "rfc:RFCX9099"} <= related
@@ -55,7 +55,7 @@ def test_obsoletion_chain_branches_for_a_real_multi_obsoletes_rfc(graph):
 
 
 def test_obsoletion_chain_second_branch_point(graph):
-    # RFCX9022 is itself obsoleted by RFCX9099 -- a SECOND branch nested inside RFCX9010's
+    # RFCX9022 is itself obsoleted by RFCX9099: a SECOND branch nested inside RFCX9010's
     # component, proving history isn't flattened to one level.
     chain = graph.get_obsoletion_chain("RFCX9010")
     node_9022 = next(h for h in chain["history"] if h["rfc"] == "RFCX9022")
@@ -74,7 +74,7 @@ def test_obsoletion_chain_dangling_status_for_a_never_seen_pointer(graph):
 
 
 def test_obsoletion_chain_updates_edges_are_excluded():
-    # rfc:RFCX9040 UPDATES (not obsoletes) RFCX9010 -- it must not appear in RFCX9010's
+    # rfc:RFCX9040 UPDATES (not obsoletes) RFCX9010, so it must not appear in RFCX9010's
     # obsoletion history at all.
     import linkgraph.resolve as resolve
     import linkgraph.fixtures as fixtures

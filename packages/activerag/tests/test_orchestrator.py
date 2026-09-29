@@ -1,9 +1,9 @@
 """Tests for activerag.orchestrator.
 
-Hermetic: the whole hunt cycle is driven by hand-built fakes -- fake
+Hermetic: the whole hunt cycle is driven by hand-built fakes: fake
 ``Answer``/``RouteResult`` fixtures (same field shapes as ``test_evidence``),
 fake zero-arg ``hunt_fn`` callables, a fake ``refresh_and_research`` hook, and a
-fake headroom ``gate`` -- so no live registry, Qdrant, embedder, GPU, or network
+fake headroom ``gate``, so no live registry, Qdrant, embedder, GPU, or network
 is touched. Telemetry is written to a real ``tmp_path`` JSONL and read back,
 matching the no-live-dependency style of the other activerag tests.
 
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-# `orchestrator` itself deliberately does not import `headroom_gate` (see the note at
-# orchestrator.py:80) -- only this test does, for the real Decision/HuntDecision. Skip rather
+# `orchestrator` itself does not import `headroom_gate` (see the note at
+# orchestrator.py:80); only this test does, for the real Decision/HuntDecision. Skip rather
 # than fail collection so a missing sibling repo does not abort the entire suite.
 pytest.importorskip(
     "activerag.headroom_gate",
@@ -57,7 +57,7 @@ class FakeRouteResult:
 
 
 def _insufficient_answer_and_route():
-    # One citation -> below MIN_CITATIONS (2) -> evidence.evaluate says
+    # One citation is below MIN_CITATIONS (2), so evidence.evaluate says
     # insufficient ("too_few_citations"), which triggers the hunt cycle.
     answer = FakeAnswer(citations=[FakeCitation("c1")], dropped=[], abstained=False)
     route = FakeRouteResult(
@@ -150,7 +150,7 @@ def test_sufficient_evidence_short_circuits_with_zero_hunts(tmp_path):
     assert result.winning_source is None
     assert result.attempts == []
     assert result.event is None
-    # No hunt cycle ran -> nothing appended to the trail.
+    # No hunt cycle ran, so nothing was appended to the trail.
     assert read_events(path) == []
 
 
@@ -182,7 +182,7 @@ def test_bounded_loop_never_exceeds_candidate_count(tmp_path):
     # Each hunt_fn and the refresh hook were each invoked exactly once per source.
     assert all(h.calls == 1 for h in hunts.values())
     assert [c[1] for c in refresh.calls] == known
-    # Unresolved after exhausting all candidates -> capped, no winner.
+    # Unresolved after exhausting all candidates: capped, no winner.
     assert result.resolved is False
     assert result.winning_source is None
     assert result.hunted is True
@@ -230,14 +230,14 @@ def test_gate_denial_skips_that_hunt_attempt(tmp_path):
 
 def test_second_candidate_succeeds_after_first_fails(tmp_path):
     # 'a' hunts + ingests but stays insufficient; 'b' hunts + ingests and becomes
-    # sufficient -> stop at 'b'; 'c' is never reached (bounded, first-win).
+    # sufficient, so the cycle stops at 'b'; 'c' is never reached (bounded, first-win).
     answer, route = _insufficient_answer_and_route()
     path = tmp_path / "hunts.jsonl"
     known = ["a", "b", "c"]
     hunt_a = RecordingHunt(["a1.md"])
     hunt_b = RecordingHunt(["b1.md", "b2.md"])
     hunt_c = RecordingHunt(["c1.md"])
-    refresh = RecordingRefresh({"b": _verdict(True, "sufficient")})  # 'a' -> insufficient
+    refresh = RecordingRefresh({"b": _verdict(True, "sufficient")})  # 'a': insufficient
 
     result = run_hunt_cycle(
         query="q",
@@ -258,14 +258,14 @@ def test_second_candidate_succeeds_after_first_fails(tmp_path):
     assert result.resolved is True
     assert result.final_verdict.sufficient is True
     assert result.docs_ingested == 3  # 1 from 'a' + 2 from 'b', both ingested
-    # 'c' was never touched -- the cycle is bounded and stops on first success.
+    # 'c' was never touched: the cycle is bounded and stops on first success.
     assert hunt_c.calls == 0
     assert "c" not in [c[1] for c in refresh.calls]
     assert result.event.capped is False  # resolved, not exhausted
 
 
 def test_telemetry_records_every_attempt(tmp_path):
-    # A mixed cycle: no-source, gated-out, found-nothing, then a resolving hunt --
+    # A mixed cycle: no-source, gated-out, found-nothing, then a resolving hunt;
     # every one must land in the single appended event's sources_tried.
     answer, route = _insufficient_answer_and_route()
     path = tmp_path / "hunts.jsonl"
@@ -341,7 +341,7 @@ def test_all_sources_gated_out_records_no_hunts_but_still_writes_event(tmp_path)
         entity_hints=[],
         known_source_types=["a"],
         hunt_sources={"a": hunt_a},
-        refresh_and_research=_boom,   # never reached -- gate blocks first
+        refresh_and_research=_boom,   # never reached: gate blocks first
         gate=_deny_gate,
         telemetry_path=path,
     )

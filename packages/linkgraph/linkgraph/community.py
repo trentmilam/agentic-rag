@@ -1,21 +1,21 @@
 """linkgraph's own community-assignment pass.
 
 ``graphrx`` (the sibling structural linter) has NO community-detection code of
-its own -- ``graphrx.graph.community_members()`` only GROUPS nodes by a
+its own: ``graphrx.graph.community_members()`` only GROUPS nodes by a
 ``community`` label that must already be assigned (see that module's
 docstring). Populating that label meaningfully is this repo's job.
 
 Choice: connected components over the UNDIRECTED ``obsoletes``/``updates``/
 ``corrects`` subgraph (``co_mentions`` alone is excluded). Rationale: a family
 of RFCs that supersede/update one another is this domain's real, unambiguous
-lineage grouping -- the natural notion of "these documents belong together".
+lineage grouping, the natural notion of "these documents belong together".
 An erratum's ``corrects`` edge is just as unambiguous: an erratum exists
 *because of* one specific RFC, so it belongs to that RFC's community rather
-than sitting in a singleton of its own -- there is no real question of
+than sitting in a singleton of its own; there is no real question of
 "which lineage" the way there might be for a weaker signal. ``co_mentions``
 IS excluded: two entities can appear in the same source document without
-being topically related at all, so it is deliberately too noisy to define
-community membership from.
+being topically related at all, so it is too noisy to define community
+membership from.
 """
 from __future__ import annotations
 

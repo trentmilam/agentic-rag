@@ -1,14 +1,15 @@
-"""Ingest orchestrator: manifest -> extract/clean/OCR -> section-chunk -> embed -> Qdrant.
+"""Ingest orchestrator: reads the manifest, extracts/cleans/OCRs each document,
+section-chunks it, embeds it, and writes it to Qdrant.
 
 Bypasses RAGpack's own ``RAGpack.ingest()`` (which chunks paragraph-only, with no
-section awareness) and instead reuses RAGpack's lower-level, proven pieces directly
--- extract_text/is_garbled, the real Embedder, and the Qdrant store helpers -- so
-chain-rag controls chunk boundaries exactly (see ingest/chunk.py) while never
-re-implementing extraction, embedding, or storage.
+section awareness) and instead reuses RAGpack's lower-level, proven pieces
+directly (extract_text/is_garbled, the real Embedder, and the Qdrant store
+helpers), so chain-rag controls chunk boundaries exactly (see ingest/chunk.py)
+while never re-implementing extraction, embedding, or storage.
 
 Output is the single source of truth chainrag/qdrant_loader.py reads at query time:
 every point's payload carries {chain, doc_id, title, section_path, source_url,
-doc_type, ocr_engine, ocr_confidence} -- everything ChunkLedger/Plumbline/Legigate
+doc_type, ocr_engine, ocr_confidence}, everything ChunkLedger/Plumbline/Legigate
 and citation display need.
 """
 from __future__ import annotations
@@ -34,7 +35,7 @@ from ragpack.store import ensure_collection, upsert             # noqa: E402
 
 def _clean_html(raw: str) -> tuple[str, bool]:
     """Returns (text, extraction_failed). trafilatura returning empty/None means
-    it couldn't find real content (JS-heavy or boilerplate-only page) -- falling
+    it couldn't find real content (JS-heavy or boilerplate-only page); falling
     back to the raw markup is better than losing the document, but the caller
     must be able to tell the difference from a clean extraction."""
     import trafilatura
@@ -89,7 +90,7 @@ class IngestReport:
 
 def _force_clear_local_collection() -> None:
     """qdrant-client's local-mode ``delete_collection`` does
-    ``shutil.rmtree(path, ignore_errors=True)`` -- on Windows this can silently fail
+    ``shutil.rmtree(path, ignore_errors=True)``. On Windows this can silently fail
     (transient file lock) and leave the old collection directory in place, so a
     *"recreated"* collection actually re-attaches to old data instead of starting
     empty (observed: a stale, buggy chunk surviving a --recreate run alongside its

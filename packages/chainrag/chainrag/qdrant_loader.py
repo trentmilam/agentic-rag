@@ -1,9 +1,9 @@
-"""Load a Consilium Module directly from Qdrant -- no re-embedding at startup.
+"""Load a Consilium Module directly from Qdrant: no re-embedding at startup.
 
-The ingest pipeline (ingest/run_ingest.py) embeds every chunk ONCE with the real
+The ingest pipeline (ingest/run_ingest.py) embeds every chunk once with the real
 CUDA-backed embedder and writes it to Qdrant with a `chain` payload field. This
 loader reads those precomputed vectors+text back out, one Module per chain, so
-Consilium's proven Router/compose() code runs completely unmodified -- Qdrant is
+Consilium's proven Router/compose() code runs completely unmodified. Qdrant is
 the real embedding store, not a redundant side-index.
 """
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""ingest_and_retry: detect thin evidence, hunt once, retry once -- fully offline.
+"""ingest_and_retry: detect thin evidence, hunt once, retry once, fully offline.
 
 Skips cleanly if qdrant-client isn't installed (so the pure-logic tests still run anywhere).
 """
@@ -73,4 +73,4 @@ def test_hunt_finds_nothing_returns_the_original_thin_result(tmp_path):
     assert result.hunted is True
     assert result.docs_ingested == 0
     assert result.verdict.sufficient is False
-    assert result.hits == original   # unchanged -- nothing new was ingested, so re-search matches
+    assert result.hits == original   # unchanged: nothing new was ingested, so re-search matches

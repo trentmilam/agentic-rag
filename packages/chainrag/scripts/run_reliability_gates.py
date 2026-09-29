@@ -2,24 +2,25 @@
 chain-rag's real, already-ingested corpus.
 
 This is the first wiring of these four independent rag-reliability gate tools
-against a real pipeline (no existing call sites to copy from) -- every call
+against a real pipeline (no existing call sites to copy from); every call
 below uses each tool's actual discovered public API, nothing invented:
 
-  * VecStamp    -- build/load embedder-identity certificate (embedding drift).
-  * ChunkLedger -- source->chunk structural conservation (silently dropped
-                   content) + a run-over-run drift gate.
-  * Plumbline   -- citation quoted-text -> source-document provenance tracing
-                   for real answers composed by Consilium's Router + compose().
-  * Legigate    -- reference-free OCR/parse legibility gate over any OCR'd
-                   chunks in the corpus.
+  * VecStamp: build/load embedder-identity certificate (embedding drift).
+  * ChunkLedger: source-to-chunk structural conservation (silently dropped
+    content) plus a run-over-run drift gate.
+  * Plumbline: citation quoted-text to source-document provenance tracing
+    for real answers composed by Consilium's Router + compose().
+  * Legigate: reference-free OCR/parse legibility gate over any OCR'd
+    chunks in the corpus.
 
 Each gate is independent: one gate erroring or having nothing to check does
 not block the others. Run:
 
     .venv\\Scripts\\python.exe scripts\\run_reliability_gates.py
 
-Exits 0 if every gate that had real data to check passed (or had nothing to
-check -- reported N/A, never fabricated), exits 1 if any gate FAILed.
+Exits 0 if every gate that had real data to check passed, or had nothing to
+check and reported N/A rather than fabricating a result; exits 1 if any gate
+FAILed.
 """
 from __future__ import annotations
 
@@ -34,7 +35,7 @@ sys.path.insert(0, str(CHAIN_RAG_ROOT))  # so `ingest.*` / `chainrag.*` resolve,
 from chainrag._paths import add_sibling_paths  # noqa: E402
 
 # Puts `consilium` on sys.path, plus each of vecstamp/chunkledger/plumbline/legigate's
-# OWN subdir individually (rag-reliability has no __init__.py -- every tool is a flat
+# OWN subdir individually (rag-reliability has no __init__.py; every tool is a flat
 # module that bare-imports its neighbors, e.g. legigate.py does `from embed import ...`).
 add_sibling_paths()
 
@@ -67,16 +68,16 @@ class GateResult:
 
 
 # ---------------------------------------------------------------------------
-# VecStamp -- build-vs-load embedder identity certificate
+# VecStamp: build-vs-load embedder identity certificate
 # ---------------------------------------------------------------------------
 def _run_vecstamp(build_embedder, get_embedder_fn) -> GateResult:
     """ragpack's Embedder/HashEmbedder (returned by get_embedder()) already expose
-    ``embed_one(text) -> list[float]`` -- exactly VecStamp's single-string embed_fn
-    contract, no adapter needed. ``build_embedder`` stands in for the ingest-time
-    embedder (it is the one this script already used to load the real corpus);
-    ``get_embedder_fn()`` is called again to construct an INDEPENDENT second
-    instance of the same configured production embedder, standing in for a
-    freshly-restarted serving process -- the real build-vs-load boundary VecStamp
+    ``embed_one(text) -> list[float]``, exactly VecStamp's single-string embed_fn
+    contract, so no adapter is needed. ``build_embedder`` stands in for the
+    ingest-time embedder (it is the one this script already used to load the real
+    corpus); ``get_embedder_fn()`` is called again to construct an INDEPENDENT
+    second instance of the same configured production embedder, standing in for
+    a freshly-restarted serving process: the real build-vs-load boundary VecStamp
     certifies.
     """
     load_embedder = get_embedder_fn()
@@ -93,7 +94,7 @@ def _run_vecstamp(build_embedder, get_embedder_fn) -> GateResult:
 
 
 # ---------------------------------------------------------------------------
-# ChunkLedger -- source -> chunk structural conservation, per real document
+# ChunkLedger: source-to-chunk structural conservation, per real document
 # ---------------------------------------------------------------------------
 def _run_chunkledger(modules, docs_by_id) -> GateResult:
     """For each real source document, build_ledger(raw_source_text, real_ingested_
@@ -118,7 +119,7 @@ def _run_chunkledger(modules, docs_by_id) -> GateResult:
     for doc in docs_by_id.values():
         chunks = chunks_by_doc.get(doc.id)
         if not chunks:
-            continue  # not present in the index -- nothing ingested yet to conserve against
+            continue  # not present in the index: nothing ingested yet to conserve against
         checked += 1
 
         source_text, _ocr_engine, _ocr_conf, _html_failed = _load_text(doc)
@@ -145,7 +146,7 @@ def _run_chunkledger(modules, docs_by_id) -> GateResult:
 
 
 # ---------------------------------------------------------------------------
-# Plumbline -- citation quoted-text -> source-document provenance
+# Plumbline: citation quoted-text to source-document provenance
 # ---------------------------------------------------------------------------
 def _run_plumbline(registry, embedder, chain_names, docs_by_id) -> GateResult:
     """One real representative query per chain (its Descriptor's own first
@@ -153,7 +154,7 @@ def _run_plumbline(registry, embedder, chain_names, docs_by_id) -> GateResult:
     eval/smoke_eval.py's exact pattern. Every resulting Citation's claim text
     (v1 composer is extractive: claim == the cited chunk's text) is resolved
     against ITS document's raw _load_text() output via Plumbline's fuzzy
-    (whitespace/case-normalization-aware) resolver -- proving every citation
+    (whitespace/case-normalization-aware) resolver, proving every citation
     genuinely traces back to a real span in the source document."""
     name = "Plumbline (citation->source provenance)"
 
@@ -183,7 +184,7 @@ def _run_plumbline(registry, embedder, chain_names, docs_by_id) -> GateResult:
     for doc_id, citations in citations_by_doc.items():
         doc = docs_by_id.get(doc_id)
         if doc is None:
-            continue  # a citation referenced a doc_id not in the manifest -- shouldn't happen, skip not crash
+            continue  # a citation referenced a doc_id not in the manifest: shouldn't happen, skip not crash
         source_text, *_rest = _load_text(doc)
         spans = plumbline_build_manifest(source_text, citations)
         n_checked += len(spans)
@@ -198,7 +199,7 @@ def _run_plumbline(registry, embedder, chain_names, docs_by_id) -> GateResult:
 
 
 # ---------------------------------------------------------------------------
-# Legigate -- reference-free legibility gate over any OCR'd chunks
+# Legigate: reference-free legibility gate over any OCR'd chunks
 # ---------------------------------------------------------------------------
 def _scan_ocr_chunks(client, collection: str) -> list[tuple[str, str]]:
     """Full-collection scroll (same mechanics as chainrag/qdrant_loader.py's
@@ -225,7 +226,7 @@ def _run_legigate(client) -> GateResult:
     name = "Legigate (OCR/parse legibility)"
     ocr_chunks = _scan_ocr_chunks(client, SETTINGS.collection)
     if not ocr_chunks:
-        # Real finding: the production ingest (22 docs, 1100 chunks) needed no OCR --
+        # Real finding: the production ingest (22 docs, 1,055 chunks) needed no OCR;
         # every payload's ocr_engine is null. Report that explicitly rather than
         # skipping silently or fabricating OCR'd input to gate against.
         return GateResult(name, "N/A", f"N/A -- {len(ocr_chunks)} OCR'd chunks in corpus")

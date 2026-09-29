@@ -1,5 +1,5 @@
 """Graph construction: turn a stream of ``EntityRef`` mentions into a
-``LinkGraph`` -- nodes, directed ``obsoletes``/``updates``/``corrects`` edges
+``LinkGraph``: nodes, directed ``obsoletes``/``updates``/``corrects`` edges
 read straight from each mention's ``extra``, and a ``co_mentions`` pass
 grouped by ``doc_id``.
 

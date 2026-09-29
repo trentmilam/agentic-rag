@@ -1,7 +1,7 @@
 """Tests for activerag.hunt.
 
 Hermetic: every test drops real files into a real ``tmp_path`` staging
-directory and reads them back. No network, no live registry, no GPU -- matching
+directory and reads them back. No network, no live registry, no GPU, matching
 the no-live-dependency style of test_evidence/test_priority/test_telemetry.
 """
 from __future__ import annotations
@@ -24,14 +24,14 @@ def test_is_a_zero_arg_hunt_fn_returning_dropped_paths(tmp_path):
     _drop(staging, "b.md")
 
     source = StagingDirHuntSource(staging, source_type="rfc_text")
-    found = source()  # called with NO arguments -- the ingest_and_retry contract
+    found = source()  # called with NO arguments: the ingest_and_retry contract
 
     assert sorted(p.name for p in found) == ["a.md", "b.md"]
     assert all(isinstance(p, Path) and p.is_file() for p in found)
 
 
 def test_missing_staging_dir_returns_empty_not_error(tmp_path):
-    # The drop-zone need not exist yet -- that's "found nothing", not a crash.
+    # The drop-zone need not exist yet; that's "found nothing", not a crash.
     source = StagingDirHuntSource(tmp_path / "never_created", source_type="errata")
 
     assert source() == []
@@ -54,7 +54,7 @@ def test_only_newly_dropped_files_are_returned_on_second_call(tmp_path):
     first_call = source()
     assert [p.name for p in first_call] == ["first.md"]
 
-    # A second call with nothing new must return nothing -- the already-handed
+    # A second call with nothing new must return nothing: the already-handed
     # file is not re-offered (the "newly-dropped" contract).
     assert source() == []
 

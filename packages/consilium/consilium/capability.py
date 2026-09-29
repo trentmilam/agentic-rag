@@ -2,7 +2,7 @@
 actually touch on a module: name / descriptor / chunks / centroid() / retrieve().
 A ``ComputeCapability`` adds ``compute()``.
 
-``typing.Protocol`` only -- no runtime coupling (no ``@runtime_checkable``, no
+``typing.Protocol`` only, with no runtime coupling (no ``@runtime_checkable``, no
 ``isinstance`` dispatch against these Protocols anywhere in consilium; dispatch
 uses the concrete ``ComputeModule`` base instead, see compute.py). This is a
 documentation-grade contract, not a base class: the existing ``Module``

@@ -1,16 +1,18 @@
-"""chain-rag -- multichain blockchain technical-knowledge RAG. Interactive chat UI.
+"""chain-rag: multichain blockchain technical-knowledge RAG. Interactive chat UI.
 
-    projects/chain-rag/.venv/Scripts/python.exe app.py
+    cd packages/chainrag
+    .venv/Scripts/python.exe app.py
 
 Ask real technical questions about Bitcoin, Ethereum, Solana, Monero, Polygon, and
-Cardano protocol internals -- routed and cited against a curated corpus of primary
+Cardano protocol internals, routed and cited against a curated corpus of primary
 sources (whitepapers, BIPs, EIPs, protocol docs) via Consilium's router/composer.
 Every answer is extractive and citation-gated: the retrieved source chunks ARE the
-answer, or the system abstains rather than guess. No LLM anywhere in the answer path
--- retrieval + a deterministic router + a citation-integrity gate, nothing else.
+answer, or the system abstains rather than guess. No LLM anywhere in the answer
+path: retrieval, a deterministic router, and a citation-integrity gate, nothing else.
 
-Standalone: no network calls at query time, no dependency on anything outside this
-repo + its sibling capability repos (consilium, rag-reliability).
+No network calls at query time. The only dependency outside this repo's own
+`packages/consilium` is the sibling `rag-reliability` repo, needed only for the
+reliability-gate script (see the package README).
 """
 from __future__ import annotations
 
@@ -48,8 +50,8 @@ EXAMPLES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Theme -- a quiet SaaS chrome (one neutral surface, one
-# accent, plain status pills), a distinct indigo accent for this tool's identity.
+# Theme: a quiet SaaS chrome (one neutral surface, one accent, plain status
+# pills), with a distinct indigo accent for this tool's identity.
 # ---------------------------------------------------------------------------
 _BG = "#F7F8FA"
 _SURFACE = "#FFFFFF"
@@ -112,7 +114,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {{ outline: 2p
 
 
 def _prior_user_turn(history: list) -> str:
-    """The immediately-prior user turn only (not the full history) -- a cheap fix
+    """The immediately-prior user turn only (not the full history): a cheap fix
     for pronoun-heavy follow-ups ("why is that?") that's safe on topic-switch,
     since the integrity gate's query-relevance floor still drops stale-topic
     claims even if this turn's query drags in an unrelated prior topic."""

@@ -6,24 +6,24 @@ traversal API on top (``get_related`` / ``get_obsoletion_chain`` /
 An RFC number is already a stable, unambiguous identity (obsoletion mints an
 entirely NEW number rather than revising an existing one), so unlike a
 letter-revisioned part there is no separate "family/revision" node to split
-out -- one node per real RFC, one node per real erratum. This is simpler than
-a revision-chain model on purpose.
+out: one node per real RFC, one node per real erratum. This is simpler than
+a revision-chain model.
 
 Edge types, all real (nothing fabricated):
 
-* ``obsoletes``  -- directed, ``(A, B)`` means "A obsoletes B". Many-to-many:
+* ``obsoletes``: directed, ``(A, B)`` means "A obsoletes B". Many-to-many:
   a single RFC can obsolete several others, and be obsoleted by several
   others (the real RFC 2616 -> {7230..7235} shape).
-* ``updates``    -- directed, ``(A, B)`` means "A updates B" (does not retire
-  B -- a materially weaker relationship than obsoletion).
-* ``corrects``   -- directed, ``(errata, rfc)``.
-* ``co_mentions``-- undirected, scored (see ``scoring.py``); a much weaker,
+* ``updates``: directed, ``(A, B)`` means "A updates B" (does not retire
+  B, a materially weaker relationship than obsoletion).
+* ``corrects``: directed, ``(errata, rfc)``.
+* ``co_mentions``: undirected, scored (see ``scoring.py``); a much weaker,
   noisier signal than the three structural edge types above.
 
 ``min_score`` filtering (``get_related``) and the ``graphrx`` export's
 ``min_edge_score`` (``adapter.py``) apply ONLY to ``co_mentions`` edges. The
 other three are asserted facts pulled directly from the source data, not a
-probabilistic signal -- there is nothing for a score threshold to mean there.
+probabilistic signal; there is nothing for a score threshold to mean there.
 """
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ class Node:
     # True iff this node was built from at least one EntityRef whose own
     # entity_type/entity_id named it directly. False means it is known ONLY
     # because something else's obsoletes/obsoleted_by/updates/updated_by/
-    # rfc (errata's corrects-target key) pointed at it -- a dangling reference (see get_obsoletion_chain).
+    # rfc (errata's corrects-target key) pointed at it: a dangling reference (see get_obsoletion_chain).
     seen_as_primary: bool = False
 
 
@@ -79,10 +79,10 @@ class LinkGraph:
     def add_edge(self, src: str, dst: str, edge_type: str, score: float = 1.0) -> None:
         """Add a directed edge, deduping exact (src, dst, edge_type) repeats.
 
-        Real ``candidates.jsonl`` data is expected to be redundant on purpose
-        (the real RFC index annotates BOTH directions -- an RFC's own record
+        Real ``candidates.jsonl`` data is expected to be redundantly annotated
+        (the real RFC index annotates BOTH directions: an RFC's own record
         lists what it obsoletes, and the RFC it obsoletes independently lists
-        what obsoleted it) -- this dedup is what makes that redundancy safe to
+        what obsoleted it). This dedup is what makes that redundancy safe to
         just re-process rather than requiring the caller to pre-filter it.
         """
         key = (src, dst, edge_type)
@@ -140,8 +140,8 @@ class LinkGraph:
 
     def _obsoletes_component(self, node_id: str) -> set[str]:
         """Every node reachable from ``node_id`` via ``obsoletes`` edges only,
-        undirected -- the full connected "obsoletion component", branches and
-        all. ``updates``/``corrects``/``co_mentions`` are deliberately excluded:
+        undirected: the full connected "obsoletion component", branches and
+        all. ``updates``/``corrects``/``co_mentions`` are excluded:
         an update does not retire its target, so it is not part of a
         supersession *history*.
         """
@@ -167,17 +167,17 @@ class LinkGraph:
         ``rfc_id`` (a bare RFC id, e.g. ``"RFCX9010"``, not prefixed).
 
         Because real RFC obsoletion is many-to-many, ``history`` legitimately
-        BRANCHES -- this returns the whole connected component as a list of
+        BRANCHES: this returns the whole connected component as a list of
         per-node summaries (each node's own direct obsoletes/obsoleted_by
         neighbors) rather than forcing a single linear path.
 
         ``status``:
-          * ``"dangling"``  -- ``rfc_id`` was never seen as its own EntityRef
+          * ``"dangling"``: ``rfc_id`` was never seen as its own EntityRef
             (known only because something else's obsoletes/obsoleted_by
             pointed at it).
-          * ``"obsoleted"`` -- some real node has an ``obsoletes`` edge
+          * ``"obsoleted"``: some real node has an ``obsoletes`` edge
             targeting ``rfc_id``.
-          * ``"current"``   -- seen directly, and nothing obsoletes it.
+          * ``"current"``: seen directly, and nothing obsoletes it.
         """
         node_id = f"rfc:{rfc_id}"
         node = self.nodes.get(node_id)

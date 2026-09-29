@@ -85,7 +85,7 @@ def iter_files(paths: Union[PathLike, Iterable[PathLike]], max_file_bytes: int):
         for path in candidates:
             if not path.is_file():
                 continue
-            # Skip-dir filter applies ONLY to directories discovered *under* the crawl root — never
+            # Skip-dir filter applies ONLY to directories discovered *under* the crawl root, never
             # to the root/ancestors (a project living under .../out/ is fine) and never to a file the
             # caller named explicitly.
             if not explicit_file:
@@ -126,7 +126,7 @@ def _payload(root: Path, path: Path, idx: int, chunk: str) -> tuple[dict, str]:
 
 
 class RAGpack:
-    """A document → vector store you can ingest into and search — GPU-optional."""
+    """Turns a folder of documents into a vector store you can ingest into and search, GPU-optional."""
 
     def __init__(self, settings: Optional[Settings] = None, embedder=None):
         self.settings = settings or Settings()
@@ -213,7 +213,7 @@ class RAGpack:
         min_top_score: float = 0.15,
     ) -> IngestRetryResult:
         """Search, and if the evidence is thin, ask ``hunt_fn`` for more content, ingest it, and
-        search once more. Never retries a second time — this is a single hunt-and-retry, not a
+        search once more. Never retries a second time; this is a single hunt-and-retry, not a
         loop. ``hunt_fn`` takes no arguments and returns paths to newly-available content (or an
         empty iterable if it found nothing); it decides *how* to hunt, this method doesn't.
         """

@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0 — initial release
+## v1.0.0: initial release
 
 - Core switchboard: router + integrity gate + composer; subject-routed, citation-bound answers, abstains when nothing supports the query.
 - Integrity hardening: cross-corpus conflict detection with trust-tier resolution, corroboration-based poison quarantine.

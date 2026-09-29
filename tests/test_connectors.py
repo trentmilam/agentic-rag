@@ -2,7 +2,7 @@
 output shape.
 
 Each connector is exercised against a small, hand-written synthetic input file
-written to ``tmp_path`` -- never a real fetched RFC/errata/IANA file, never the
+written to ``tmp_path``, never a real fetched RFC/errata/IANA file, never the
 321k-chunk corpus. This mirrors ``agenticrag/mcp/test_server.py``'s fixture-only
 convention: no network, no Qdrant, no GPU, small synthetic inputs only.
 
@@ -19,7 +19,7 @@ from ingest.entities import EntityRef
 
 
 # ---------------------------------------------------------------------------
-# rfc_text.extract -- full RFC text ingested verbatim
+# rfc_text.extract: full RFC text ingested verbatim
 # ---------------------------------------------------------------------------
 def test_rfc_text_extract_shape(tmp_path):
     body = (
@@ -56,7 +56,7 @@ def test_rfc_text_extract_rejects_non_matching_filename(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# rfc_index.extract -- per-RFC "index card" rendered from rfc-index.txt
+# rfc_index.extract: per-RFC "index card" rendered from rfc-index.txt
 # ---------------------------------------------------------------------------
 def test_rfc_index_extract_shape(tmp_path):
     card = (
@@ -106,7 +106,7 @@ def test_rfc_index_extract_rejects_empty_file(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# errata.extract -- one real errata record (labeled header + correction body)
+# errata.extract: one real errata record (labeled header + correction body)
 # ---------------------------------------------------------------------------
 def test_errata_extract_shape(tmp_path):
     record = (
@@ -159,7 +159,7 @@ def test_errata_extract_unverified_status_is_unresolved(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# iana_registry.extract -- IANA protocol-parameter registry XML -> markdown
+# iana_registry.extract: IANA protocol-parameter registry XML -> markdown
 # ---------------------------------------------------------------------------
 def test_iana_registry_extract_shape(tmp_path):
     xml_body = (

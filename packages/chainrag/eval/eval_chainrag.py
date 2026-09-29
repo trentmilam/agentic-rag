@@ -1,8 +1,9 @@
-"""Production eval: proves the full ingest -> Qdrant -> Consilium pipeline answers
+"""Production eval: proves the full ingest-to-Qdrant-to-Consilium pipeline answers
 real technical questions against the real, already-ingested multichain corpus (22
-documents, 1100 chunks across all 6 chains). Uses the real embedder
-(BAAI/bge-base-en-v1.5) -- the exact one that ingested the corpus, no hash-embedder
-shortcut -- so this proves genuine semantic retrieval end-to-end, not wiring alone.
+documents, 1,055 chunks across all 6 chains). Uses the real embedder
+(BAAI/bge-base-en-v1.5), the exact one that ingested the corpus, with no
+hash-embedder shortcut, so this proves genuine semantic retrieval end-to-end,
+not wiring alone.
 
 Six per-chain checks (one held-out question per chain: not abstained, the expected
 chain contributed a citation), one genuine cross-chain comparison (both expected
@@ -12,12 +13,12 @@ eval/smoke_eval.py for the ingest-path smoke test).
 
 MEASURED CALIBRATION NOTE: consilium.router.Router's library defaults (floor=0.11,
 anchor_centroid=0.25, anchor_best_chunk=0.25) assume a near-zero baseline cosine
-between unrelated text -- true for a bag-of-words HashEmbedder, false for the real
-BAAI/bge-base-en-v1.5 dense embedder over this 1100-chunk corpus (best-chunk cosine,
-a max over ~1100 chunks, is a saturated order statistic that clears 0.25 for almost
+between unrelated text: true for a bag-of-words HashEmbedder, false for the real
+BAAI/bge-base-en-v1.5 dense embedder over this 1,055-chunk corpus (best-chunk cosine,
+a max over ~1,055 chunks, is a saturated order statistic that clears 0.25 for almost
 any query, including gibberish). This is measured, not assumed: see
 chainrag.bootstrap.ROUTER_KWARGS for the diagnostic numbers and the recalibrated,
-per-instance threshold values used below -- consilium's own shared defaults (used
+per-instance threshold values used below. Consilium's own shared defaults (used
 by every other Consilium instance) are untouched; this is chain-rag's own
 Router instantiation exercising the library's documented constructor kwargs.
 
@@ -42,7 +43,7 @@ from ingest.embed_config import get_embedder  # noqa: E402
 
 # One held-out, naturally-phrased technical question per chain. Real semantic
 # embedder means these don't need to parrot the chain's Descriptor.subjects
-# wording -- ordinary technical phrasing routes correctly via cosine similarity.
+# wording; ordinary technical phrasing routes correctly via cosine similarity.
 PER_CHAIN_CHECKS = [
     ("How does Bitcoin's mining difficulty retarget over time so that new blocks "
      "keep arriving roughly every ten minutes?", "bitcoin"),

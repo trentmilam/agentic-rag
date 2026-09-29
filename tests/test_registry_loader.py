@@ -1,6 +1,6 @@
 """Fixture-only tests for ``agenticrag.registry_loader.load_module_from_qdrant``.
 
-Built entirely against a hand-constructed fake Qdrant client -- no real
+Built entirely against a hand-constructed fake Qdrant client: no real
 ``qdrant_client.QdrantClient``, no on-disk collection, no network. Only
 ``qdrant_client.models`` (``FieldCondition``/``Filter``/``MatchValue``, plain
 data-holder classes) is imported for real, exactly as ``registry_loader`` itself
@@ -10,7 +10,7 @@ shape the production code builds.
 This covers the two things the loader's docstring calls out as the actual
 mechanism the revision guard is built on: (1) precomputed vectors+text are
 turned into a ``consilium.module.Module`` unmodified, and (2) ``current_only``
-threads an ``is_current`` filter condition into the Qdrant query -- present
+threads an ``is_current`` filter condition into the Qdrant query: present
 when True, absent when False.
 """
 from __future__ import annotations
@@ -33,7 +33,7 @@ class FakePoint:
 class FakeScrollClient:
     """Records every ``scroll_filter`` it is called with (for inspection) and
     hands back one fixed page of hand-built points, then signals "no more
-    pages" via ``offset=None`` -- exactly enough of the real client's contract
+    pages" via ``offset=None``, exactly enough of the real client's contract
     for ``load_module_from_qdrant``'s single while-loop to terminate after one
     call."""
 

@@ -9,7 +9,7 @@ authors = [{ name = "Trent Milam" }]
 # numpy is required transitively by activerag.headroom_gate: it reuses the
 # sibling `headroom` flat module (rag-reliability/headroom), which imports numpy.
 # That sibling is imported by sys.path (not pip-installed), so its own deps are
-# not pulled in automatically -- activerag's env must provide them.
+# not pulled in automatically; activerag's env must provide them.
 dependencies = ["numpy>=1.26"]
 
 [project.optional-dependencies]

@@ -5,7 +5,7 @@ numpy==2.5.1
 # UI
 gradio==6.19.0
 
-# Vector store + embeddings (see RAGpack, a sibling repo, for how these are used)
+# Vector store + embeddings (see packages/ragpack for how these are used)
 qdrant-client==1.18.0
 fastembed-gpu==0.8.0
 onnxruntime-gpu==1.27.0
@@ -23,6 +23,6 @@ opencv-python-headless==5.0.0.93
 # Install from the CUDA-tagged index, e.g.:
 #   pip install torch==2.12.1+cu130 torchvision==0.27.1+cu130 --index-url https://download.pytorch.org/whl/cu130
 # torch's own wheel bundles the cuDNN/cuBLAS DLLs onnxruntime-gpu needs on Windows
-# (see ingest/embed_config.py::_register_cuda_dll_dir) -- no separate cuDNN package required.
+# (see ingest/embed_config.py::_register_cuda_dll_dir); no separate cuDNN package required.
 torch==2.12.1+cu130
 torchvision==0.27.1+cu130

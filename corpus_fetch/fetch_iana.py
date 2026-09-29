@@ -14,8 +14,8 @@ and parse as ``<registry>``/``<record>`` XML before being included:
 (counts measured against the live files at investigation time.) One candidate from
 the original suggested list, ``language-subtag-registry.xml``, was checked and
 dropped: IANA marks it ``<file type="legacy">``, and the URL returns a 6-line XML
-stub pointing at a plain-text registry file, not real record data -- substituted with
-``ipv4-address-space`` instead, which does validate.
+stub pointing at a plain-text registry file, not real record data, so it was
+substituted with ``ipv4-address-space`` instead, which does validate.
 """
 from __future__ import annotations
 

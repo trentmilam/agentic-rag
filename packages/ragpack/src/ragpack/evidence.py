@@ -1,10 +1,10 @@
 """Detect thin evidence in a set of search hits, so a caller can decide whether to hunt for more.
 
 This is a pure, domain-agnostic check: it knows nothing about documents, chunks, or where hits
-came from — just their scores and count. ``min_top_score``'s default (0.15) is a conservative,
+came from: just their scores and count. ``min_top_score``'s default (0.15) is a conservative,
 uncalibrated placeholder; real callers should calibrate it against their own embedder + corpus
 before trusting it, the same lesson chain-rag's README documents about Consilium's Router
-defaults — a near-zero-baseline assumption for raw cosine similarity is often wrong for real
+defaults: a near-zero-baseline assumption for raw cosine similarity is often wrong for real
 dense embedders, and floors need per-corpus calibration.
 """
 from __future__ import annotations

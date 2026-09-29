@@ -1,4 +1,4 @@
-"""Pure-logic tests for chunking, stable IDs, and classification — no deps, fully offline."""
+"""Pure-logic tests for chunking, stable IDs, and classification: no deps, fully offline."""
 import pytest
 
 from ragpack.chunk import chunk_text, classify_chunk, clean_text, content_hash, stable_id
@@ -28,12 +28,12 @@ def test_chunk_text_hard_split_overlap_does_not_split_words():
     # regression: the overlap-merge step always inserted "\n\n" between a chunk's
     # carried-over tail and the next chunk. For two hard-split tiles of the SAME
     # oversized block, that boundary falls mid-content (often mid-word) rather than
-    # at a real paragraph break -- inserting "\n\n" there corrupted a word straddling
+    # at a real paragraph break, so inserting "\n\n" there corrupted a word straddling
     # the split point (observed on a real PDF: "subse" + "\n\n" + "quent"). Distinct
     # per-position tokens (no blank lines, one giant block) make a corrupted word
     # detectable: a split token is not a member of the original token set.
     # A raw tile's own leading/trailing edge can legitimately land mid-word (plain
-    # character-count slicing, same as any basic chunker) -- overlap exists to give
+    # character-count slicing, same as any basic chunker); overlap exists to give
     # the *next* chunk that missing context, not to make this chunk's own edge a
     # whole word. The bug under test is different: a separator erroneously injected
     # into the *interior* of a chunk, corrupting a word nowhere near either edge.
@@ -51,7 +51,7 @@ def test_chunk_text_hard_split_overlap_does_not_split_words():
 def test_chunk_text_hard_split_overlap_not_duplicated():
     # regression: a single paragraph (no blank lines) larger than max_chars used to
     # get its own baked-in sliding-window overlap in the hard-split branch, and then
-    # the final overlap pass prepended the same tail AGAIN -- each chunk after the
+    # the final overlap pass prepended the same tail AGAIN, so each chunk after the
     # first contained the boundary text twice. Distinct words per position (not a
     # repeated char) make a duplicated span detectable.
     words = [f"w{i:04d}" for i in range(1200)]  # "w0000 w0001 ... " one giant paragraph

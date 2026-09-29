@@ -1,4 +1,4 @@
-"""chainrag -- cited retrieval over primary blockchain protocol documentation.
+"""chainrag: cited retrieval over primary blockchain protocol documentation.
 
 A second vertical over the same router/citation-gating spine (``consilium``) and the
 same ingest/embed/store machinery (``ragpack``) that the IETF RFC vertical uses, kept

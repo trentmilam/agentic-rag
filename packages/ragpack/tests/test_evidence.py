@@ -1,4 +1,4 @@
-"""Pure unit tests of evaluate_evidence -- no Qdrant, no embedder, no I/O."""
+"""Pure unit tests of evaluate_evidence: no Qdrant, no embedder, no I/O."""
 from ragpack import EvidenceVerdict, Hit, evaluate_evidence
 
 

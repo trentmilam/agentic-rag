@@ -1,5 +1,5 @@
 """Contract validation: the EntityRef dataclass shape, and the
-load_from_export <-> fixtures round trip through a real candidates.jsonl-
+load_from_export/fixtures round trip through a real candidates.jsonl-
 shaped file."""
 import json
 
@@ -44,7 +44,7 @@ def test_load_from_export_round_trips_the_fixture(tmp_path):
 
 
 def test_load_from_export_generic_over_entity_type(tmp_path):
-    """The loader must not special-case any entity_type -- registry mentions
+    """The loader must not special-case any entity_type: registry mentions
     (never cross-referenced elsewhere) load exactly like rfc/errata ones;
     it is resolve.build_graph's job to skip them, not the loader's."""
     path = tmp_path / "candidates.jsonl"

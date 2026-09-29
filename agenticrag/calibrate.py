@@ -1,16 +1,16 @@
 """Calibration: measures REAL consilium.router.Router scores against the real
 5-module registry (4 retrieval + SupersessionModule) and the real embedder
 (BAAI/bge-base-en-v1.5), over one naturally-phrased in-scope query per module
-plus one genuinely out-of-scope query -- printing the observed ``ranked``
-scores, never inventing plausible-sounding ones.
+plus one genuinely out-of-scope query. It prints the observed ``ranked``
+scores and never invents plausible-sounding ones.
 
 ``consilium.router.Router``'s stated library defaults (``floor=0.11``,
 ``anchor_centroid=0.25``, ``anchor_best_chunk=0.25``) assume a near-zero
-baseline cosine between unrelated text -- true for a bag-of-words
+baseline cosine between unrelated text: true for a bag-of-words
 ``HashEmbedder``, not necessarily true for a real dense embedder over a
 321k-chunk corpus (the same gap shows up even at a much smaller ~1,100-chunk
 scale). This script exists to MEASURE whether that gap is real
-here too, rather than assume it -- run it, read the printed numbers, and only
+here too, rather than assume it. Run it, read the printed numbers, and only
 then decide whether ``agenticrag.bootstrap.ROUTER_KWARGS`` needs to depart
 from the library defaults.
 
@@ -32,7 +32,7 @@ from agenticrag.bootstrap import ROUTER_KWARGS, build_registry  # noqa: E402
 from agenticrag.embed_config import get_embedder                # noqa: E402
 
 # One naturally-phrased in-scope query per real source type/capability, plus
-# one genuinely out-of-scope query -- the exact same set eval_agenticrag.py
+# one genuinely out-of-scope query: the exact same set eval_agenticrag.py
 # asserts against.
 CALIBRATION_QUERIES = [
     ("rfc_text", "How does IP fragmentation and reassembly work in the Internet Protocol?"),

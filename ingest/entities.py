@@ -1,6 +1,6 @@
 """The one entity-reference shape every connector's ``extract()`` emits.
 
-A single flat type -- rather than a per-connector one -- is what lets ``candidates.jsonl``
+A single flat type (rather than a per-connector one) is what lets ``candidates.jsonl``
 be a uniform stream a later coverage-gap or conflict-detection tool can scan without
 knowing which connector produced any given line.
 """

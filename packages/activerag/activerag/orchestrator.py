@@ -1,4 +1,4 @@
-"""The glue: one BOUNDED hunt-and-retry cycle over a Consilium answer.
+"""The glue: one bounded hunt-and-retry cycle over a Consilium answer.
 
 When :mod:`activerag.evidence` flags an existing ``Answer`` as resting on thin
 evidence, *something* has to actually do the hunting: pick which sources to try
@@ -8,56 +8,55 @@ after ingesting whatever was found, and leave a durable audit trail
 (``telemetry``). This module is that conductor. Every other activerag module is a
 single-purpose instrument; this one plays them in order and stops on time.
 
-Intentional, documented departure from RAGpack
------------------------------------------------
+A documented departure from RAGpack
+------------------------------------
 RAGpack's ``RAGpack.ingest_and_retry``
-(``projects/RAGpack/src/ragpack/pipeline.py``) is deliberately a *single* hunt:
-"if the evidence is thin, ask ONE ``hunt_fn`` for more content, ingest it, and
-search once more. Never retries a second time -- this is a single hunt-and-retry,
-not a loop." That is the right contract for a flat corpus with one undifferentiated
+(``packages/ragpack/src/ragpack/pipeline.py``) is a *single* hunt: "if the
+evidence is thin, ask one ``hunt_fn`` for more content, ingest it, and search
+once more. Never retries a second time; this is a single hunt-and-retry, not
+a loop." That is the right contract for a flat corpus with one undifferentiated
 source.
 
 At the Consilium layer there is usually more than one candidate source (several
-local registries plus a last-resort internet fetch), so this module GENERALIZES
-that contract -- **on purpose, not by oversight** -- into: "try multiple
-*different source-typed* hunts, in priority order, within ONE bounded cycle."
-The generalization keeps RAGpack's core safety promise (a cycle always
-terminates; work is never repeated) while widening the single hunt into a ranked
-sweep:
+local registries plus a last-resort internet fetch), so this module generalizes
+that contract into: "try multiple *different source-typed* hunts, in priority
+order, within one bounded cycle." The generalization keeps RAGpack's core
+safety promise (a cycle always terminates; work is never repeated) while
+widening the single hunt into a ranked sweep:
 
-* **Bounded.** The cycle iterates the ranked candidate list at most once. It stops
-  at the FIRST hunt that improves the verdict to sufficient, or when the candidate
-  list is exhausted -- whichever comes first. It can never run longer than there
-  are candidates.
-* **No candidate twice.** ``priority.rank_sources`` de-duplicates source types and
-  the loop visits each exactly once; a single candidate is never re-hunted within
-  a cycle. (RAGpack's "never loops twice" promise, lifted from one source to N.)
-* **Every attempt recorded.** Attempted, gated-out (headroom said no), found-
-  nothing, still-insufficient, and succeeded are ALL written to the telemetry
-  trail, so the sweep is fully replayable after the fact.
+* Bounded: the cycle iterates the ranked candidate list at most once. It stops
+  at the first hunt that improves the verdict to sufficient, or when the
+  candidate list is exhausted, whichever comes first. It can never run longer
+  than there are candidates.
+* No candidate twice: ``priority.rank_sources`` de-duplicates source types and
+  the loop visits each exactly once; a single candidate is never re-hunted
+  within a cycle (RAGpack's "never loops twice" promise, lifted from one
+  source to N).
+* Every attempt recorded: attempted, gated-out (headroom said no),
+  found-nothing, still-insufficient, and succeeded are all written to the
+  telemetry trail, so the sweep is fully replayable after the fact.
 
-Injection point for the real registry (kept injected so this module owns control
-flow only)
-----------------------------------------------------------------------------------
-The re-search/re-ingest step is the ONLY part that needs a live embedder + Qdrant
-+ the agentic-rag registry. Rather than importing that machinery here and
-hard-coupling this module to it, that dependency is INJECTED as the
+Injection point for the real registry
+---------------------------------------
+The re-search/re-ingest step is the only part that needs a live embedder,
+Qdrant, and the agentic-rag registry. Rather than importing that machinery
+here and hard-coupling this module to it, that dependency is injected as the
 ``refresh_and_research`` callable:
 
     ``refresh_and_research(query, source_type, found_docs) -> EvidenceVerdict``
 
 Given the query, the source type just hunted, and the freshly-hunted document
 paths, the hook ingests those docs into the real store, re-runs the query, and
-returns the re-evaluated :class:`~activerag.evidence.EvidenceVerdict`. This module
-never learns whether that hook is the real registry-backed one or a test fake --
-both satisfy the same alias, so the whole orchestration loop stays fixture-testable
-with no live Qdrant/GPU, while the real closure drops in WITHOUT any edit to this
-module's internals. That real closure is
+returns the re-evaluated :class:`~activerag.evidence.EvidenceVerdict`. This
+module never learns whether that hook is the real registry-backed one or a
+test fake; both satisfy the same alias, so the whole orchestration loop stays
+fixture-testable with no live Qdrant/GPU, while the real closure drops in
+without any edit to this module's internals. That real closure is
 :func:`activerag.refresh_hook.make_refresh_and_research` (backed by
 :class:`activerag.registry_bridge.RegistryBridge`, which rebuilds the registry via
 ``agenticrag.bootstrap.build_registry``). The physical-headroom check and the
-per-source hunt callables are injected for the same reason -- this module owns the
-*control flow*, never the hardware or the registry.
+per-source hunt callables are injected for the same reason: this module owns
+the *control flow*, never the hardware or the registry.
 """
 from __future__ import annotations
 
@@ -76,16 +75,16 @@ from activerag.evidence import (
 from activerag.priority import SourceCandidate, rank_sources
 from activerag.telemetry import HuntEvent, SourceProbeRecord, append_event
 
-if TYPE_CHECKING:  # HuntDecision is only a type here -- injected at runtime, so
+if TYPE_CHECKING:  # HuntDecision is only a type here, injected at runtime, so
     # this module never needs to import headroom_gate (and its numpy/sibling pull).
     from activerag.headroom_gate import HuntDecision
 
 PathLike = Union[str, Path]
 
 # A hunt source: a zero-arg callable returning paths to newly-available content.
-# This is EXACTLY RAGpack.ingest_and_retry's ``hunt_fn`` contract and
-# StagingDirHuntSource.__call__'s signature -- so a StagingDirHuntSource instance
-# already IS a HuntFn, with no adapter.
+# This is exactly RAGpack.ingest_and_retry's ``hunt_fn`` contract and
+# StagingDirHuntSource.__call__'s signature, so a StagingDirHuntSource instance
+# already is a HuntFn, with no adapter.
 HuntFn = Callable[[], Iterable[PathLike]]
 
 # The injected re-search/re-ingest hook (see the module docstring). Given
@@ -97,7 +96,7 @@ RefreshAndResearch = Callable[[str, str, Sequence[Path]], EvidenceVerdict]
 
 # The injected physical-headroom gate. Given the candidate about to be hunted it
 # returns a HuntDecision (headroom_gate.HuntDecision-shaped); only may_hunt=True
-# permits the hunt -- DEFER/DENY skip THIS hunt and move on to the next candidate.
+# permits the hunt. DEFER/DENY skip this hunt and move on to the next candidate.
 GateFn = Callable[[SourceCandidate], "HuntDecision"]
 
 
@@ -108,7 +107,7 @@ class OrchestrationResult:
     ``event`` is the exact :class:`~activerag.telemetry.HuntEvent` that was
     appended to the telemetry trail this cycle, or ``None`` when the evidence was
     already sufficient and no hunt cycle ran (nothing is written on a
-    short-circuit -- the trail records hunts, and no hunt happened).
+    short-circuit: the trail records hunts, and no hunt happened).
     """
 
     initial_verdict: EvidenceVerdict
@@ -139,7 +138,7 @@ def run_hunt_cycle(
     Flow:
 
     1. Evaluate the existing evidence (``evidence.evaluate``). If it is already
-       sufficient, SHORT-CIRCUIT: no ranking, no gate, no hunt, no telemetry --
+       sufficient, short-circuit: no ranking, no gate, no hunt, no telemetry.
        ``hunted`` is ``False`` and ``event`` is ``None``.
     2. Otherwise rank the candidate sources (``priority.rank_sources``) and, for
        each in priority order, exactly once:
@@ -149,10 +148,10 @@ def run_hunt_cycle(
        * call its ``hunt_fn``; on an empty result record ``found_nothing`` and
          continue;
        * else hand the found docs to ``refresh_and_research`` and re-evaluate. If
-         the new verdict is sufficient, this is the winning hunt -- record it and
-         STOP (bounded: first improvement wins). If not, record
+         the new verdict is sufficient, this is the winning hunt: record it and
+         stop (bounded: first improvement wins). If not, record
          ``still_insufficient_*`` and continue to the next candidate.
-    3. Append ONE :class:`~activerag.telemetry.HuntEvent` recording every attempt
+    3. Append one :class:`~activerag.telemetry.HuntEvent` recording every attempt
        above, then return.
 
     The cycle is bounded by the length of the ranked candidate list and never
@@ -161,7 +160,7 @@ def run_hunt_cycle(
     started = time.monotonic()
     initial_verdict = evaluate_evidence(answer, route_result)
 
-    # Short-circuit: evidence already sufficient -> no hunt cycle at all.
+    # Short-circuit: evidence already sufficient means no hunt cycle at all.
     if initial_verdict.sufficient:
         return OrchestrationResult(
             initial_verdict=initial_verdict,
@@ -186,7 +185,7 @@ def run_hunt_cycle(
         source_type = candidate.source_type
         hunt_fn = hunt_sources.get(source_type)
 
-        # (a) No hunt source registered for this type -- cannot hunt it.
+        # (a) No hunt source registered for this type: cannot hunt it.
         if hunt_fn is None:
             attempts.append(
                 SourceProbeRecord(
@@ -198,7 +197,7 @@ def run_hunt_cycle(
             )
             continue
 
-        # (b) Physical-headroom gate. DEFER/DENY both mean "not now" -- skip THIS
+        # (b) Physical-headroom gate. DEFER/DENY both mean "not now": skip this
         # hunt (do not spend the hop) and try the next candidate.
         decision = gate(candidate)
         if not decision.may_hunt:

@@ -3,7 +3,7 @@
 ``https://www.rfc-editor.org/rfc-index.txt`` is the authoritative, plain-text listing
 of every RFC ever issued (9,000+ entries as of this writing), including the real
 ``(Obsoletes NNNN)`` / ``(Obsoleted by NNNN)`` / ``(Updates NNNN)`` / ``(Updated by
-NNNN)`` relationship tags -- a genuine many-to-many directed supersession graph, not a
+NNNN)`` relationship tags: a genuine many-to-many directed supersession graph, not a
 fabricated linear revision history. It is cached once to disk (it changes rarely and
 is ~2MB); every other fetcher and ``ingest/run_ingest.py`` re-parses the cached copy
 locally instead of re-downloading it.
@@ -14,7 +14,7 @@ reassembled by joining their lines with spaces, then parsed with regexes anchore
 the index's own fixed vocabulary (``(Format:``, ``(Status:``, etc). The one genuinely
 ambiguous step is splitting "Title. Authors. Date." into title vs. authors, since
 titles can themselves contain periods and author lists are just comma-separated prose
-too -- see :func:`_split_title_authors` for the (measured) heuristic used.
+too; see :func:`_split_title_authors` for the (measured) heuristic used.
 """
 from __future__ import annotations
 
@@ -37,8 +37,8 @@ _UPDATED_BY_RE = re.compile(r"\(Updated by\s+([^)]+)\)")
 
 # A real author name token: one or more single-letter "X." initials followed by a
 # capitalized surname, with an optional generational/editor suffix. The initials are
-# deliberately restricted to a single letter (not "[A-Za-z]*\." -- which would also
-# match an ordinary title word like "Software.") -- real RFC-index author initials are
+# deliberately restricted to a single letter (not "[A-Za-z]*\.", which would also
+# match an ordinary title word like "Software."). Real RFC-index author initials are
 # always this short; title words that happen to end a sentence are not. Matched
 # against the *live* 9,794-entry issued-RFC index, a left-to-right scan for the first
 # position where the remainder of the "title + authors" string matches this grammar
@@ -113,7 +113,7 @@ def _parse_entry(joined_lines: str) -> RfcIndexEntry | None:
     date_match = _DATE_RE.search(entry_text)
     if not date_match:
         # Every real issued entry carries a "(Format:" tag with a preceding date
-        # (verified against the live index: 0 issued entries lack one) -- if this
+        # (verified against the live index: 0 issued entries lack one). If this
         # ever fires it means the index's own format changed, not a value to guess at.
         raise ValueError(f"RFC {number}: could not locate a date/(Format: tag -- {entry_text[:200]!r}")
     date = date_match.group(1).strip()

@@ -2,7 +2,7 @@
 
 Hermetic: all telemetry is the module's clearly-labelled SIMULATED trajectories
 driven through a deterministic (seeded) ``headroom.Trajectory``. No nvidia-smi,
-no pynvml, no GPU, no network -- matching the no-live-dependency style of the
+no pynvml, no GPU, no network, matching the no-live-dependency style of the
 other activerag tests. The one real cross-repo dependency exercised here is the
 sibling-path import of the ``headroom`` flat module (via activerag._paths).
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 # The sibling `headroom` module is the one thing here that is not self-contained. Without this,
-# its absence is a COLLECTION error, and pytest aborts the whole run -- so a missing sibling
+# its absence is a COLLECTION error, and pytest aborts the whole run, so a missing sibling
 # takes down all 54 tests rather than the 8 that actually need it.
 pytest.importorskip(
     "activerag.headroom_gate",
@@ -42,7 +42,7 @@ def test_sibling_import_reuses_the_real_headroom_module():
 
 
 def test_cold_gate_with_no_observations_allows_the_first_hunt():
-    # No telemetry observed yet -> headroom cold-starts to ALLOW, so the first
+    # No telemetry observed yet, so headroom cold-starts to ALLOW and the first
     # hunt is permitted unconditionally.
     gate = HuntHeadroomGate(CARD_A)
 
@@ -66,7 +66,7 @@ def test_near_wedge_3090_trajectory_denies_hunt():
 
     assert result.may_hunt is False
     assert result.decision is Decision.DENY
-    # The governor's audited reason explains WHY -- VRAM against the ceiling.
+    # The governor's audited reason explains WHY: VRAM against the ceiling.
     assert "vram" in result.reason.lower()
 
 
@@ -95,7 +95,7 @@ def test_only_allow_maps_to_may_hunt_true():
 
 
 def test_evaluate_simulated_is_deterministic_across_runs():
-    # Same seeded simulated trajectory -> identical verdict every time.
+    # Same seeded simulated trajectory produces an identical verdict every time.
     first = evaluate_simulated(SIM_NEAR_WEDGE_TIGHT, profile=CARD_A)
     second = evaluate_simulated(SIM_NEAR_WEDGE_TIGHT, profile=CARD_A)
 

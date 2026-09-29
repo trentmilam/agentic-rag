@@ -1,4 +1,4 @@
-"""LinkGraph RED/GREEN self-test -- proves the graph genuinely recovers the
+"""LinkGraph RED/GREEN self-test: proves the graph genuinely recovers the
 REAL many-to-many obsoletion structure (not a linear-chain approximation) and
 that the ``graphrx`` hand-off catches a genuinely planted bad merge.
 
@@ -10,14 +10,14 @@ GREEN : on the fixture's clean export, ``graphrx.lint.report()`` finds ZERO
         high-risk defects; ``get_obsoletion_chain``/``get_corrections``/
         ``get_related`` recover the real branching structure, including a
         genuinely dangling obsoletion pointer.
-RED   : a deliberately planted bad ER merge (two real, cross-family nodes
-        collapsed into one -- the same technique graphrx/fixtures.py itself
-        uses to plant its own collision) is caught by the UNMODIFIED
-        ``graphrx.lint.report()`` via its real embedding-separation mechanism.
+RED   : a planted bad ER merge (two real, cross-family nodes collapsed into
+        one, the same technique graphrx/fixtures.py itself uses to plant its
+        own collision) is caught by the UNMODIFIED ``graphrx.lint.report()``
+        via its real embedding-separation mechanism.
 HEAD-TO-HEAD : a naive "linear successor" incumbent (read only the first
         ``obsoleted_by`` entry, as a one-to-one revision-chain model would)
         is compared against LinkGraph's real traversal on the fixture's
-        6-way multi-obsoletes case -- the exact scenario this repo exists to
+        6-way multi-obsoletes case, the exact scenario this repo exists to
         handle correctly.
 """
 import copy
@@ -46,8 +46,8 @@ def naive_latest_successor(rfc_id: str, refs: list[EntityRef]) -> list[str]:
     Many document-revision trackers (and the earlier, now-abandoned synthetic
     -corpus design this very repo would have needed) model supersession as a
     simple one-to-one chain: each document has AT MOST one successor. Applied
-    here, that means reading only ``extra["obsoleted_by"][0]`` -- the first
-    successor listed -- and discarding the rest. This is a fair, realistic
+    here, that means reading only ``extra["obsoleted_by"][0]``, the first
+    successor listed, and discarding the rest. This is a fair, realistic
     incumbent (not a strawman): it is exactly what a single "next_version_id"
     foreign key would capture, and it is exactly what breaks on RFC 2616's
     real six-way obsoletion.
@@ -61,7 +61,7 @@ def naive_latest_successor(rfc_id: str, refs: list[EntityRef]) -> list[str]:
 
 def plant_bad_merge(gx_graph: dict, node_a: str, node_b: str, merged_id: str) -> dict:
     """Mutate a COPY of a clean graphrx export by merging two real, distinct
-    linkgraph nodes into one -- the same technique ``graphrx/fixtures.py``
+    linkgraph nodes into one, the same technique ``graphrx/fixtures.py``
     uses in ``build_flawed_graph`` to plant its own ER-collision defect:
     concatenate both nodes' facts, redirect every edge touching either
     original endpoint to the merged id, drop the two originals, keep one

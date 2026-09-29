@@ -1,4 +1,4 @@
-"""Minimal ragpack example — fully offline (HashEmbedder + in-memory Qdrant, no downloads).
+"""Minimal ragpack example, fully offline (HashEmbedder + in-memory Qdrant, no downloads).
 
     python examples/quickstart.py
 """

@@ -1,4 +1,4 @@
-"""Determinism under input-order shuffling: the full resolve -> community ->
+"""Determinism under input-order shuffling: the full resolve-to-community-to-
 export pipeline must not depend on the order candidates.jsonl lines arrive in."""
 import random
 
@@ -9,7 +9,7 @@ def _canonical_export(entity_refs):
     g = resolve.build_graph(entity_refs)
     community.assign_communities(g)
     gx = adapter.export_graphrx_graph(g)
-    # facts are keyed by an insertion-order-dependent "factN" id -- compare by
+    # facts are keyed by an insertion-order-dependent "factN" id, so compare by
     # VALUE (the set of (text, real_entity, real_community) triples per node),
     # not by the arbitrary id, so this only asserts genuine structural equality.
     nodes_canon = {

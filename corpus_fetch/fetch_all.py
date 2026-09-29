@@ -1,7 +1,7 @@
 """Orchestrates the full real-data fetch: rfc-index -> rfc full text -> rfc_index
 cards -> errata -> IANA registries. Run as ``python -m corpus_fetch.fetch_all``.
 
-Deliberately separate from ``ingest/run_ingest.py`` -- ingest never triggers a network
+Deliberately separate from ``ingest/run_ingest.py``: ingest never triggers a network
 fetch itself; this step must run first, then ingest reads whatever's already on disk
 under ``data/raw/``. Safe to re-run: every step here is independently resumable
 (skips files already on disk unless ``--force``).

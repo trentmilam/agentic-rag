@@ -2,15 +2,15 @@
 
 Investigated mechanism (this was actually checked, not guessed): errata.rfc-editor.org
 is a server-rendered Django site (Bootstrap templates, a plain HTML ``<form
-id="errata-search-form">``) -- there is no separate JSON/CSV API endpoint (no
+id="errata-search-form">``). There is no separate JSON/CSV API endpoint (no
 ``window.__DATA__`` blob, no ``/api/`` path, no bundled SPA JS; the only script tag on
 the page is ``bootstrap.bundle.min.js``). However, its search form's own
 ``presentation`` field exposes a ``records`` ("Full Records") option, and submitting it
 with every other filter left blank (``?rfc_number=&status=any&presentation=records``)
-returns EVERY erratum for EVERY RFC in ONE HTML response with no pagination -- verified
+returns EVERY erratum for EVERY RFC in ONE HTML response with no pagination. Verified
 directly: 7,957 ``Errata-ID`` records in a single ~43MB GET, matching the 7,957-row
 count independently obtained from the ``presentation=table`` view. This is a genuine
-complete, single-request bulk export -- used instead of one lookup per RFC number
+complete, single-request bulk export, used instead of one lookup per RFC number
 (the fallback the task anticipated in case no bulk mechanism existed) because it needs
 far fewer requests to the real server AND is more complete.
 
@@ -19,8 +19,8 @@ its own ``<div class="card">`` with a ``<dl>`` of ``Status:``/``Type:``/``Report
 By:``/``Date Reported:`` followed by the free-text correction ("In section X, it
 says:" / "It should say:" / "Notes:"). This is parsed with targeted regexes over
 those known, stable field labels rather than a full HTML parser (no HTML-parsing
-library is otherwise used in this repo, and the page's structure -- deeply nested but
-flatly repeating -- doesn't need one).
+library is otherwise used in this repo, and the page's structure, deeply nested but
+flatly repeating, doesn't need one).
 """
 from __future__ import annotations
 
@@ -36,8 +36,8 @@ SEARCH_URL = "https://errata.rfc-editor.org/search/?rfc_number=&status=any&prese
 # The bulk export returned 7,957 real Errata-ID records when this parser was verified
 # (see the module docstring); the RFC errata database only ever grows (historical
 # errata are never deleted). This floor sits well below that measured count so a normal
-# fetch clears it easily, but a CSS/markup change on the externally-controlled page --
-# which would silently drive the regex-based parse toward zero records -- trips it and
+# fetch clears it easily, but a CSS/markup change on the externally-controlled page
+# (which would silently drive the regex-based parse toward zero records) trips it and
 # fails loudly instead of quietly shipping a near-empty errata corpus.
 _MIN_EXPECTED_ERRATA_RECORDS = 7000
 
@@ -95,7 +95,7 @@ def parse_errata_page(path: Path) -> list[Erratum]:
             current_rfc = int(match.group(1))
             continue
         if current_rfc is None:
-            continue  # an erratum marker before any RFC header -- shouldn't happen on the real page
+            continue  # an erratum marker before any RFC header; shouldn't happen on the real page
         eid = int(match.group(2))
         block_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         block = text[match.end():block_end]

@@ -9,7 +9,7 @@ correction text.
 but on a REAL status instead of a fabricated one: ``Verified`` means the RFC Editor
 confirmed the correction is real, so ``resolved=True``; anything else (``Reported``,
 ``Held for Document Update``, ``Rejected``) has not been accepted as a confirmed fix,
-so ``resolved=False`` -- a genuinely real "still needs attention / not authoritative"
+so ``resolved=False``: a genuinely real "still needs attention / not authoritative"
 case, not an invented one.
 """
 from __future__ import annotations

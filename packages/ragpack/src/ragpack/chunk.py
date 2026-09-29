@@ -1,6 +1,6 @@
 """Deterministic text cleaning, chunking, stable IDs, and a light chunk classifier.
 
-Pure standard library — no third-party deps, no I/O. Same input → same output, always.
+Pure standard library, no third-party deps, no I/O. The same input always produces the same output.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def chunk_text(text: str, max_chars: int = 1800, overlap: int = 250) -> list[str
     """
     if max_chars < 1:
         raise ValueError("max_chars must be >= 1")
-    overlap = max(0, min(overlap, max_chars // 2))   # cap overlap at half the window -> step stays meaningful
+    overlap = max(0, min(overlap, max_chars // 2))   # cap overlap at half the window, so the step stays meaningful
     if not text:
         return []
 
@@ -36,13 +36,13 @@ def chunk_text(text: str, max_chars: int = 1800, overlap: int = 250) -> list[str
     # from the source text (False). The second kind only occurs for a hard split's
     # 2nd+ tile: slicing a WIDER window straight out of the original block (instead
     # of gluing two independently-.strip()'d fragments back together) is the only
-    # way to add overlap there without corrupting content -- gluing with "\n\n"
+    # way to add overlap there without corrupting content: gluing with "\n\n"
     # injects characters into what's really one unbroken run of text, corrupting a
     # word straddling the split point (e.g. "subse" + "\n\n" + "quent"); gluing with
     # no separator at all instead fuses two whole words that had a real space
     # between them ("word0388" + "word0389" -> "word0388word0389") because each
     # piece's OWN .strip() had already discarded that boundary space. A direct
-    # slice of the source has neither problem -- it's just the literal text.
+    # slice of the source has neither problem; it's just the literal text.
     raw: list[tuple[str, bool]] = []
     current = ""
 
@@ -103,8 +103,8 @@ def content_hash(text: str) -> str:
 def stable_id(source_id: str, relative_path: str, chunk_index: int, chash: str) -> int:
     """A deterministic, OS-path-independent Qdrant point ID.
 
-    Hashes only (source_id, forward-slashed relative path, chunk index, content hash) —
-    NOT the absolute path — so ingesting the same file from Windows and Linux produces the
+    Hashes only (source_id, forward-slashed relative path, chunk index, content hash),
+    not the absolute path, so ingesting the same file from Windows and Linux produces the
     same point ID (re-ingest updates in place instead of creating duplicates).
     """
     id_payload = {
@@ -125,7 +125,7 @@ _CODE_SUFFIXES = {
 
 
 def _blob_ratios(text: str) -> tuple[float, float]:
-    """(long-blob ratio, code-line ratio) — used to flag machine-noise vs code vs prose."""
+    """(long-blob ratio, code-line ratio): used to flag machine-noise vs code vs prose."""
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     if not lines:
         return 0.0, 0.0
@@ -154,7 +154,7 @@ def classify_chunk(text: str, suffix: str = "") -> str:
     """Coarse, domain-agnostic label: ``blob`` | ``code`` | ``table`` | ``prose``.
 
     Useful as a payload field for filtering (e.g. drop ``blob`` hex/base64 dumps, or
-    boost ``code``). Deliberately generic — no domain vocabulary.
+    boost ``code``). Deliberately generic, with no domain vocabulary.
     """
     blob_ratio, code_ratio = _blob_ratios(text)
     if blob_ratio >= 0.35:

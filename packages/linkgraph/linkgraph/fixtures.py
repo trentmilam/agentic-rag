@@ -1,9 +1,9 @@
-"""TEST FIXTURE modeling the real ``candidates.jsonl`` shape -- NOT a claim
+"""TEST FIXTURE modeling the real ``candidates.jsonl`` shape. NOT a claim
 about any real, identifiable RFC. Every identifier below uses the ``RFCX``/
 ``ERRX`` prefix convention (matching ``rag-reliability/syncgate``'s and
 ``covgate``'s own fixtures): a real RFC citation is *always* exactly ``RFC``
 followed by digits, with no letter in between, so ``RFCX<n>`` can never be
-mistaken for -- or collide with -- a real, currently-assigned RFC, now or
+mistaken for, or collide with, a real, currently-assigned RFC, now or
 after any number of future RFCs are issued. Every protocol described
 ("Widget Transport", "Session Handshake") is invented for this fixture.
 
@@ -13,14 +13,14 @@ RFC index (fetched into ``agentic-rag/data/raw/_cache/rfc-index.txt``) is
 dense and sequential up to 10014 with no reliably permanent gaps, so RFC
 9010, 9021-9026, and 9030 are real, currently-assigned RFCs (e.g. RFC 9010
 is "Routing for RPL (Routing Protocol for Low-Power and Lossy Networks)
-Leaves", RFC 9021 is "Use of the Walnut Digital Signature Algorithm..." --
+Leaves", RFC 9021 is "Use of the Walnut Digital Signature Algorithm...";
 nothing like this fixture's invented Widget Transport / Session Handshake
 content). Picking "a plausible-looking unused number" is not a reliable
 safety property against a corpus assigned by an external authority that
 keeps growing; only a non-digit-shaped identifier is permanently safe by
 construction, which is why every fictional RFC-like id here is ``RFCX<n>``.
-(Real errata IDs are already always purely numeric -- see
-``corpus_fetch/fetch_errata.py``'s ``/eid(\\d+)/`` pattern -- so this
+(Real errata IDs are already always purely numeric; see
+``corpus_fetch/fetch_errata.py``'s ``/eid(\\d+)/`` pattern, so this
 fixture's letter-prefixed ``ERRX<n>`` errata ids were never at risk of this
 same collision, but use the same prefix convention for consistency.)
 
@@ -28,32 +28,32 @@ The fixture models a genuine small multi-obsoletes pattern shaped like the
 real HTTP/1.1 case (RFC 2616 was later obsoleted by six separate RFCs,
 7230-7235): a fictional monolithic ``RFCX9010`` is split into six independent
 successors (``RFCX9021``-``RFCX9026``), plus a smaller two-successor split
-(``RFCX9030`` -> ``RFCX9031``/``RFCX9032``) for a second, independent family,
-plus a clarifying ``updates`` edge, three errata, one deliberately DANGLING
-obsoletion pointer (``RFCX9022``'s obsoleted-by target, ``RFCX9099``, is
-never given its own mention -- modeling a real gap where the ingest has not
-yet fetched/emitted a document a real RFC index entry points at), and a
-handful of co-mention mentions grouped by ``doc_id`` for the weak
-co-occurrence signal.
+(``RFCX9030`` splitting into ``RFCX9031``/``RFCX9032``) for a second,
+independent family, plus a clarifying ``updates`` edge, three errata, one
+intentionally DANGLING obsoletion pointer (``RFCX9022``'s obsoleted-by
+target, ``RFCX9099``, is never given its own mention, modeling a real gap
+where the ingest has not yet fetched/emitted a document a real RFC index
+entry points at), and a handful of co-mention mentions grouped by
+``doc_id`` for the weak co-occurrence signal.
 
 Each RFC's raw text repeats that RFC's own subject-matter vocabulary
 ("multiplex"/"framing"/"stream"/"windowing"/"backpressure" for the Widget
 Transport family; "handshake"/"certificate"/"cipher"/"nonce"/"attestation"
-for the Session Handshake family) -- same technique ``graphrx/fixtures.py``
+for the Session Handshake family), the same technique ``graphrx/fixtures.py``
 itself uses to keep a family's facts genuinely coherent and two families
 genuinely separable, which ``tests/test_graphrx_handoff.py`` exercises via a
-deliberately planted cross-family merge.
+planted cross-family merge.
 
 Structured ``extra`` (obsoletes/updates/rfc) is attached only to each
 entity's own canonical ("-index"/errata) mention, mirroring how a real
 RFC-index-derived record would carry that metadata while a plain prose
-reference to an already-known entity typically does not -- ``resolve.py``'s
+reference to an already-known entity typically does not. ``resolve.py``'s
 per-mention edge-building (rather than a separate "merge extras" step) is
 what makes that split safe: every mention is processed independently and
 redundant/duplicate edges are deduped by ``LinkGraph.add_edge``. ``extra``'s
 cross-reference lists hold ``RFCX<n>`` strings here (the real contract from
 agentic-rag's own connectors uses bare ints, since real RFC numbers are the
-correct real-world representation) -- ``resolve.py`` reads them with plain
+correct real-world representation); ``resolve.py`` reads them with plain
 f-string interpolation, which works identically for either representation,
 so this fixture-only divergence needs no production-code change.
 """
@@ -125,7 +125,7 @@ FIXTURE_ENTITY_REFS: list[EntityRef] = [
         "multiplex framing appendix.",
         "errata-ERRX102", True, {"rfc": "RFCX9010", "status": "Verified"},
     ),
-    # -- co-mention texture: one real doc discussing several of these together --
+    # co-mention texture: one real doc discussing several of these together
     EntityRef(
         "rfc", "RFCX9021",
         "This document, RFCX9021, together with RFCX9022 and RFCX9023, "
@@ -177,7 +177,7 @@ FIXTURE_ENTITY_REFS: list[EntityRef] = [
         "handshake attestation appendix.",
         "errata-ERRX101", False, {"rfc": "RFCX9031", "status": "Reported"},
     ),
-    # -- co-mention texture --
+    # co-mention texture
     EntityRef(
         "rfc", "RFCX9030",
         "This document discusses RFCX9030's original handshake certificate "

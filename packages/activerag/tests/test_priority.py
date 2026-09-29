@@ -18,7 +18,7 @@ def test_deterministic_ordering_same_inputs_always_produce_same_output():
 
 def test_internet_always_sorts_last_regardless_of_hints():
     known = ["registry_a", "registry_b", "internet"]
-    # "internet" is hinted FIRST -- it must still land last.
+    # "internet" is hinted FIRST; it must still land last.
     hints = ["internet", "registry_a"]
 
     ranked = rank_sources("q", hints, known)
@@ -31,7 +31,7 @@ def test_internet_always_sorts_last_regardless_of_hints():
 
 def test_internet_not_present_when_not_in_known_source_types():
     known = ["registry_a", "registry_b"]
-    hints = ["internet"]  # hinted but not a known source type -- ignored
+    hints = ["internet"]  # hinted but not a known source type: ignored
 
     ranked = rank_sources("q", hints, known)
 

@@ -1,11 +1,11 @@
-"""Light MediaWiki -> markdown cleaner for Bitcoin's BIP source files.
+"""Light MediaWiki-to-markdown cleaner for Bitcoin's BIP source files.
 
-BIPs are published as raw .mediawiki files (github.com/bitcoin/bips) -- not real
+BIPs are published as raw .mediawiki files (github.com/bitcoin/bips), not real
 markdown, not HTML. Reading them as raw text would dump wiki markup ('''bold''',
 [[links]], {{templates}}, == headers ==) straight into chunks as literal noise, the
 same "silent garbage in the index" failure mode _clean_html's trafilatura fallback
 guards against for HTML. This is NOT a full mediawiki parser (no mwparserfromhell
-dependency) -- just enough to (a) convert == headers == to markdown '#' headers so
+dependency), just enough to (a) convert == headers == to markdown '#' headers so
 chunk.py's existing header regex finds them, and (b) strip the common inline markup
 that would otherwise read as garbage in a citation.
 """
@@ -21,7 +21,7 @@ _TEMPLATE_RE = re.compile(r"\{\{.*?\}\}", re.DOTALL)
 
 
 def mediawiki_to_markdown(raw: str) -> str:
-    """Best-effort cleanup, not a full parser -- BIP infobox templates ({{BIP
+    """Best-effort cleanup, not a full parser: BIP infobox templates ({{BIP
     Header ...}}) are boilerplate metadata (already captured via the manifest's
     own title/doc_type fields), so dropping them loses no prose content."""
     text = _TEMPLATE_RE.sub("", raw)

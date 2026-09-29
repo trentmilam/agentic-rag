@@ -2,7 +2,7 @@
 
 Hermetic: RegistryBridge is driven by a FakeBuildRegistry (as in
 test_registry_bridge.py), and run_ingest_fn/route_and_compose_fn are injected
-fakes -- no real Qdrant, embedder, ingest pipeline, or consilium Router/compose
+fakes: no real Qdrant, embedder, ingest pipeline, or consilium Router/compose
 is ever touched. Proves call order and data flow only.
 """
 from __future__ import annotations
@@ -120,7 +120,7 @@ def test_returns_the_real_evaluate_evidence_verdict_for_the_composed_answer(tmp_
     )
     verdict = hook("q", "rfc_text", [])
 
-    # FakeAnswer/FakeRouteResult clear every evidence.evaluate bar -> sufficient.
+    # FakeAnswer/FakeRouteResult clear every evidence.evaluate bar, so sufficient.
     assert verdict.sufficient is True
     assert verdict.citation_count == 2
 

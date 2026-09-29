@@ -1,4 +1,4 @@
-"""Consilium -- a multi-RAG switchboard ("private research desk").
+"""Consilium: a multi-RAG switchboard ("private research desk").
 
 An orchestrator routes a query across independent, subject-specialized modules
 and returns a citation-bound answer, abstaining when nothing supports it.

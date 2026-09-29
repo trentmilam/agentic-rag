@@ -1,7 +1,7 @@
 """The graphrx hand-off integration proof: export_graphrx_graph() round-trips
 through graphrx.graph.adjacency(), a clean fixture produces zero high-risk
 defects from the UNMODIFIED graphrx.lint.report(), and a fixture with a
-deliberately planted bad merge is correctly flagged by that same unmodified
+planted bad merge is correctly flagged by that same unmodified
 mechanism."""
 import copy
 
@@ -11,7 +11,7 @@ from linkgraph import adapter
 
 # graphrx lives in the rag-reliability sibling repo, not on PyPI. Without it this
 # module used to raise at COLLECTION, which took the whole suite down on a clean
-# clone -- so `git clone && pytest` failed for anyone who had not already guessed
+# clone, so `git clone && pytest` failed for anyone who had not already guessed
 # they needed a second repo. CI checks the sibling out so these tests really run
 # there; everywhere else they skip with a message that says what to clone.
 pytest.importorskip(
@@ -27,7 +27,7 @@ HIGH_RISK = 0.25
 
 
 def plant_bad_merge(gx_graph: dict, node_a: str, node_b: str, merged_id: str) -> dict:
-    """Merge two real, distinct linkgraph nodes into one -- the SAME technique
+    """Merge two real, distinct linkgraph nodes into one, the SAME technique
     graphrx/fixtures.py's build_flawed_graph uses to plant its own ER-collision
     defect: concatenate both nodes' facts, redirect every edge touching either
     original endpoint to the merged id, drop the two originals, keep one
@@ -85,7 +85,7 @@ def test_planted_bad_merge_is_flagged_by_unmodified_lint_report(graph):
     gx = adapter.export_graphrx_graph(graph)
     # rfc:RFCX9021 (Widget Transport / multiplex vocabulary) and rfc:RFCX9031
     # (Session Handshake / cipher vocabulary) are real, distinct, cross-family
-    # nodes -- exactly the kind of accidental entity-resolution merge that
+    # nodes, exactly the kind of accidental entity-resolution merge that
     # should never happen but must be CAUGHT when it does.
     bad = plant_bad_merge(gx, "rfc:RFCX9021", "rfc:RFCX9031", "rfc:RFCX9021+RFCX9031")
 

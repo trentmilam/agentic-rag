@@ -1,4 +1,4 @@
-"""agenticrag.mcp -- an additive MCP server surface over agentic-rag's real
+"""agenticrag.mcp: an additive MCP server surface over agentic-rag's real
 answer path.
 
 Importing this subpackage is side-effect-free and does NOT require the ``mcp``

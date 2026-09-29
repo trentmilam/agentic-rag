@@ -1,4 +1,4 @@
-"""Consilium v3 eval — heterogeneous routing (retrieval + compute). Exit 0 on pass.
+"""Consilium v3 eval: heterogeneous routing (retrieval + compute). Exit 0 on pass.
 
     python eval/eval_v3.py
 

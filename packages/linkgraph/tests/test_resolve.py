@@ -10,7 +10,7 @@ def _edge_set(g):
 
 def test_obsoletes_direction_is_successor_to_predecessor(graph):
     # "RFCX9021 obsoletes RFCX9010" must be stored as (RFCX9021 -> RFCX9010), never
-    # the reverse -- get_obsoletion_chain's status logic depends on this.
+    # the reverse; get_obsoletion_chain's status logic depends on this.
     assert ("rfc:RFCX9021", "rfc:RFCX9010", "obsoletes") in _edge_set(graph)
     assert ("rfc:RFCX9010", "rfc:RFCX9021", "obsoletes") not in _edge_set(graph)
 
@@ -54,7 +54,7 @@ def test_corrects_edge_direction_and_dedup_across_repeated_mentions(graph):
         if e.edge_type == "corrects" and e.dst == "rfc:RFCX9031"
     ]
     # ERRX101 is mentioned TWICE in the fixture (its own record + a body-doc
-    # co-mention), both carrying the same rfc=RFCX9031 -- must dedup to 1.
+    # co-mention), both carrying the same rfc=RFCX9031, so this must dedup to 1.
     assert corrects_edges == [("errata:ERRX101", "rfc:RFCX9031")]
 
 

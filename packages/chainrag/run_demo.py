@@ -1,24 +1,24 @@
-"""chain-rag LIVE DEMO -- a scripted, narrated transcript over the real, already-
-ingested multichain corpus (22 documents, 1100 chunks across 6 chains).
+"""chain-rag LIVE DEMO: a scripted, narrated transcript over the real, already-
+ingested multichain corpus (22 documents, 1,055 chunks across 6 chains).
 
-    cd projects/chain-rag
+    cd packages/chainrag
     .venv/Scripts/python.exe run_demo.py
 
 Eight real questions, in order: one held-out technical question per chain (6), one
 genuine cross-chain comparison, and one question with nothing to do with any of the
-6 chains. No mocked output -- every line below is produced live by the real router
-+ the real citation-gated composer, reusing the exact queries proven in
-eval/eval_chainrag.py. Deterministic + offline beyond the local Qdrant read and
+6 chains. No mocked output: every line below is produced live by the real router
+and the real citation-gated composer, reusing the exact queries proven in
+eval/eval_chainrag.py. Deterministic and offline beyond the local Qdrant read and
 local embedding (no live network calls).
 
 Honesty note on the last question: this system's design is "cited retrieval or
-honest abstain -- never a fabricated claim" (see consilium.integrity.gate, which
+honest abstain, never a fabricated claim" (see consilium.integrity.gate, which
 drops any claim that isn't cosine-bound to a real source chunk). Whether an
 out-of-scope QUERY itself gets routed away before that point depends on the
-router's topic-relevance thresholds -- recalibrated for this real embedder+corpus
-pair, see chainrag.bootstrap.ROUTER_KWARGS. This transcript prints the router/
-composer's REAL, live output for that question rather than a scripted "it
-abstained" -- whatever actually happens is what gets printed.
+router's topic-relevance thresholds, recalibrated for this real embedder+corpus
+pair (see chainrag.bootstrap.ROUTER_KWARGS). This transcript prints the router
+and composer's real, live output for that question rather than a scripted "it
+abstained": whatever actually happens is what gets printed.
 """
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def main() -> int:
     registry = build_registry(embedder)
     router = Router(registry, embedder, **ROUTER_KWARGS)
 
-    # Q1-Q6 -- one held-out technical question per chain.
+    # Q1-Q6: one held-out technical question per chain.
     a1 = ask(router, registry, embedder, 1,
              "How does Bitcoin's mining difficulty retarget over time so that new "
              "blocks keep arriving roughly every ten minutes?")
@@ -103,14 +103,14 @@ def main() -> int:
              "to produce the next block in a given slot?")
     print(f"     \"{excerpt(a6, 'cardano')}\"")
 
-    # Q7 -- a genuine cross-chain comparison: one query, two consensus mechanisms.
+    # Q7: a genuine cross-chain comparison, one query, two consensus mechanisms.
     a7 = ask(router, registry, embedder, 7,
              "Compare how Bitcoin's proof-of-work mining and Cardano's Ouroboros "
              "proof-of-stake protocol each decide who is allowed to produce the "
              "next block.")
     print(f"     drew citations from both: {', '.join(a7.modules_used)}")
 
-    # Q8 -- nothing to do with any of the 6 chains. The intended behavior is an
+    # Q8: nothing to do with any of the 6 chains. The intended behavior is an
     # honest abstain; ask() above prints whatever the live system actually does.
     ask(router, registry, embedder, 8,
         "How do you properly season a cast iron skillet before first use?")

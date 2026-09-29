@@ -7,12 +7,12 @@ against *every* chunk in a module with a pure-Python cosine loop. On agentic-rag
 real 321k-chunk corpus that is minutes per query. consilium is deliberately
 dependency-free ("no numpy, standalone") and is NOT modified here; instead
 agentic-rag supplies its own Module/Router that push exactly those two O(N) loops
-down into Qdrant -- the store that already holds the vectors -- while reusing
+down into Qdrant (the store that already holds the vectors) while reusing
 consilium's Router scoring formula, floor/anchor logic, composer, integrity gate,
 and hardening unchanged.
 
 Note on Qdrant local mode: it is an exact brute-force search (no ANN index), so a
-search still scans the filtered subset -- but in optimized native code, ~16x
+search still scans the filtered subset, but in optimized native code, ~16x
 faster than the pure-Python loop, and only the top-k are materialized. Sub-ms
 search would require Qdrant server mode (HNSW); local mode keeps the repo
 self-contained (no server to run) at ~seconds per search.
@@ -22,7 +22,7 @@ retrieved chunk against ``module.chunks``. A chunk with no salient magnitude val
 (``hardening._salient_values``) can neither corroborate (``_agree`` needs a shared
 value) nor conflict (``_conflict`` needs both sides to have one), so it can never
 change quarantine's output. So ``module.chunks`` here holds EXACTLY the salient
-chunks (a few hundred out of 321k), loaded once at build -- quarantine behaves
+chunks (a few hundred out of 321k), loaded once at build: quarantine behaves
 identically to the full-corpus version, without materializing the corpus.
 """
 from __future__ import annotations
@@ -104,8 +104,8 @@ class QdrantModule(Module):
 
 
 class QdrantRouter(Router):
-    """consilium.Router with the ONE O(N) hot path -- the best-chunk cosine over
-    every chunk -- delegated to each module's Qdrant search.
+    """consilium.Router with the ONE O(N) hot path, the best-chunk cosine over
+    every chunk, delegated to each module's Qdrant search.
 
     The score formula, floor, and anchor logic below MIRROR
     ``consilium.router.Router._module_score`` EXACTLY (kept deliberately in sync);
@@ -141,8 +141,8 @@ class QdrantRouter(Router):
 def load_salient_chunks_by_source(client, collection: str, source_types, *,
                                   current_only: bool = True) -> dict:
     """Scan the collection ONCE (payload only) for chunks carrying a salient
-    magnitude value -- the only chunks that can affect consilium's poison-quarantine
-    corroboration -- and return ``{source_type: [Chunk, ...]}`` WITH vectors.
+    magnitude value, the only chunks that can affect consilium's poison-quarantine
+    corroboration, and return ``{source_type: [Chunk, ...]}`` WITH vectors.
 
     Uses ``consilium.hardening._salient_values`` itself as the salience oracle, so
     the set is identical to what quarantine would consider (single source of truth,

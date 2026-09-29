@@ -1,4 +1,4 @@
-"""Consilium v2 integrity-hardening eval — adversarial cases, exits 0 on thresholds.
+"""Consilium v2 integrity-hardening eval: adversarial cases, exits 0 on thresholds.
 
     python eval/eval_v2.py
 

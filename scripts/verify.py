@@ -3,15 +3,16 @@
 
 Runs the pytest suite configured in pyproject.toml: agentic-rag's own MCP
 tool-wrapper, connector, registry-loader and bootstrap tests and the supersession
-graph-walk cycle-safety suite, plus the suites of the five tools merged in under
-packages/ (consilium, ragpack, linkgraph, activerag, chainrag). None of these need
-the ingested 321k-chunk corpus -- they use small synthetic fixtures and a fake
-Qdrant client -- so this runs in seconds on a fresh clone once `pip install -r
+graph-walk cycle-safety suite, plus the shared pytest suites of four of the five
+tools merged in under packages/ (consilium, ragpack, linkgraph, activerag;
+chainrag has its own separate eval, not a shared pytest suite). None of these
+need the ingested 321k-chunk corpus: they use small synthetic fixtures and a
+fake Qdrant client, so this runs in seconds on a fresh clone once `pip install -r
 requirements.txt` and `pip install -e .` are done.
 
 Exits non-zero on the first failure, so CI and a human get one clear signal instead
 of five separate manual commands. The corpus-dependent evals (eval_agenticrag.py,
-prove_revision_guard.py) are NOT run here -- they need the built corpus; see the
+prove_revision_guard.py) are NOT run here: they need the built corpus; see the
 README "Full verify".
 
     python scripts/verify.py        # or: verify.bat

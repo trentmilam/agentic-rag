@@ -1,11 +1,11 @@
 """Tests for activerag.registry_bridge.
 
 Hermetic: RegistryBridge is driven entirely by a hand-built FakeBuildRegistry
-that returns distinguishable fake Registry-shaped objects -- no real Qdrant,
+that returns distinguishable fake Registry-shaped objects: no real Qdrant,
 embedder, or agentic-rag registry is ever built or touched. The real
 ``agenticrag.bootstrap.build_registry`` function is referenced ONLY as a
 function object (to prove the lazy default really resolves to it) and is
-never invoked -- and the one test that references it skips cleanly when the
+never invoked; the one test that references it skips cleanly when the
 agentic-rag / consilium sibling clones are absent, matching the
 no-live-dependency style of the other activerag tests.
 """
@@ -50,7 +50,7 @@ class FakeBuildRegistry:
 
 def test_default_build_registry_resolves_lazily_at_construction(monkeypatch):
     # The injection point's default is None, resolved through
-    # _load_real_build_registry at CONSTRUCTION time -- never at module import
+    # _load_real_build_registry at CONSTRUCTION time, never at module import
     # (that lazy boundary is what lets this whole file collect with no sibling
     # repo cloned). Proven hermetically: swap the loader for one that returns a
     # fake, construct with no build_registry argument, and the loaded fake must
@@ -75,8 +75,8 @@ def test_default_build_registry_resolves_lazily_at_construction(monkeypatch):
 
 
 def test_lazy_loader_resolves_the_real_agentic_rag_bootstrap_function():
-    # The lazy loader really returns the REAL agenticrag.bootstrap.build_registry
-    # -- referenced as a function object only, never called, so no Qdrant is
+    # The lazy loader really returns the REAL agenticrag.bootstrap.build_registry,
+    # referenced as a function object only, never called, so no Qdrant is
     # touched. Resolving it genuinely needs the agentic-rag sibling clone (whose
     # bootstrap in turn hard-imports from its own consilium sibling); skip
     # cleanly when either is absent instead of failing the run.
@@ -111,7 +111,7 @@ def test_refresh_all_calls_the_injected_build_registry_with_the_constructed_args
 
     bridge.refresh_all()
 
-    # Called once at construction, once at refresh_all -- both with the SAME
+    # Called once at construction, once at refresh_all, both with the SAME
     # embedder/client the bridge was constructed with.
     assert fake_build.calls == [(embedder, client), (embedder, client)]
 
@@ -143,7 +143,7 @@ def test_repeated_refresh_all_keeps_swapping_without_accumulating_old_registries
     # ... and the bridge holds ONLY the latest one.
     assert bridge.registry is seen[-1]
     # No hidden history/accumulator attribute leaking old registries anywhere
-    # on the bridge -- its instance state is exactly these four attributes.
+    # on the bridge; its instance state is exactly these four attributes.
     assert set(vars(bridge)) == {"_embedder", "_client", "_build_registry", "_registry"}
 
 
@@ -153,8 +153,8 @@ def test_importing_registry_bridge_never_pulls_in_qdrant_client():
     That is the point of resolving ``build_registry`` lazily: merely importing (or
     test-collecting) registry_bridge should stay dependency-light.
 
-    The subprocess is deliberate. This used to assert on the ambient ``sys.modules``
-    of the test session, which proved nothing about this module's import -- it held
+    A subprocess is used here for a reason. This used to assert on the ambient ``sys.modules``
+    of the test session, which proved nothing about this module's import; it held
     only because activerag was its own repository and nothing else in that session
     had any reason to import qdrant_client. Here other suites import it perfectly
     legitimately, and the assertion began failing over an import it was never really

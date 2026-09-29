@@ -1,12 +1,12 @@
-# agentic-rag runtime dependencies -- the full stack, pinned exactly (not floors) so a
+# agentic-rag runtime dependencies: the full stack, pinned exactly (not floors) so a
 # fresh `pip install -r requirements.txt` resolves to the versions this repo was
 # verified against, rather than whatever happens to be latest later. The pins below
-# also satisfy ragpack's own (floor-based) dependencies -- including pypdf, which its
+# also satisfy ragpack's own (floor-based) dependencies, including pypdf, which its
 # extractor needs and its test suite really exercises against PDF bytes.
 #
 # There are no sibling-repo pins here any more. consilium, ragpack, linkgraph, activerag
-# and chainrag are packages of this repo under packages/, installed by `pip install -e .`
-# -- see the README "One repo, five merged tools". The three commit pins that used to
+# and chainrag are packages of this repo under packages/, installed by `pip install -e .`;
+# see the README "One repo, five merged tools". The three commit pins that used to
 # live in this file, in agenticrag/_paths.py and in the CI workflow had already drifted
 # apart from one another, which is a good part of why they are gone.
 #
@@ -14,11 +14,11 @@
 # / chunkledger / plumbline / legigate) and is resolved by path; CI pins it and fails if
 # the tests that use it skip.
 
-# --- test suite (this repo's own suites plus the merged packages under packages/ --
+# --- test suite (this repo's own suites plus the merged packages under packages/,
 # what scripts/verify.py and CI run; not needed to run app.py/run_demo.py) ---
 pytest==9.1.1
 
-# --- PDF text layer (packages/ragpack/src/ragpack/extract.py) -- a base dependency of
+# --- PDF text layer (packages/ragpack/src/ragpack/extract.py): a base dependency of
 # ragpack, not an extra. packages/ragpack/tests/test_extract.py builds a real PDF and
 # runs pypdf's extraction over it, so leaving this out turns that suite red, not skipped.
 # The scanned-PDF path needs python-doctr as well; that is heavy and lives in its own
@@ -28,10 +28,10 @@ pypdf==6.14.2
 # --- corpus fetch (corpus_fetch/, real HTTPS to rfc-editor.org / iana.org) ---
 requests==2.34.2
 
-# --- chat UI (app.py) -- gradio ChatInterface (pulls fastapi/uvicorn/etc. transitively) ---
+# --- chat UI (app.py): gradio ChatInterface (pulls fastapi/uvicorn/etc. transitively) ---
 gradio==6.19.0
 
-# --- MCP server (agenticrag/mcp/) -- FastMCP API confirmed against this exact SDK ---
+# --- MCP server (agenticrag/mcp/): FastMCP API confirmed against this exact SDK ---
 mcp==1.28.1
 
 # --- vector store: Qdrant embedded LOCAL mode (no server, no Docker; exact brute-force) ---
@@ -40,19 +40,19 @@ qdrant-client==1.18.0
 # --- embedding stack: BAAI/bge-base-en-v1.5 (768-dim) via fastembed on ONNX Runtime ---
 numpy==2.5.1
 tokenizers==0.23.1
-# CPU build -- the portable default. Query embedding is one short string (instant on CPU);
+# CPU build: the portable default. Query embedding is one short string (instant on CPU);
 # ingesting the full 321k-chunk corpus is many hours on CPU vs minutes on a GPU. RAGpack's
 # device="auto" uses the GPU automatically IF the GPU build below is installed instead.
 fastembed==0.8.0
 onnxruntime==1.27.0
 #
-# GPU opt-in (CUDA-accelerated ingest -- the build this release was live-verified on):
+# GPU opt-in (CUDA-accelerated ingest: the build this release was live-verified on):
 # replace the two CPU lines directly above with the GPU builds below, and make sure the
 # CUDA 13 + cuDNN 9 runtime libraries are reachable (onnxruntime-gpu 1.27.0 is built
-# against CUDA 13.0 -- confirmed via `onnxruntime.cuda_version`, and its own runtime error
+# against CUDA 13.0, confirmed via `onnxruntime.cuda_version`, and its own runtime error
 # is explicit: "Require cuDNN 9.* and CUDA 13.*"). Same versions, identical model + code
-# path -- only the ONNX Runtime execution provider changes (RAGpack.resolve_device:
-# auto -> cuda, with CPUExecutionProvider kept as the in-session fallback). If the CUDA
+# path: only the ONNX Runtime execution provider changes (RAGpack.resolve_device
+# goes from auto to cuda, with CPUExecutionProvider kept as the in-session fallback). If the CUDA
 # libraries are absent, ONNX Runtime prints a one-line provider warning and falls back to
 # CPU; it does not crash.
 #   fastembed-gpu==0.8.0
@@ -60,7 +60,7 @@ onnxruntime==1.27.0
 #
 # The CUDA 13 runtime itself, as separate pip wheels (no system CUDA install needed).
 # NOTE: nvidia's CUDA-13-era packages dropped the old `-cu13` suffix for cublas/cuda-runtime/
-# cufft (those suffixed names are now empty deprecation stubs on PyPI -- `nvidia-cudnn-cu13`
+# cufft (those suffixed names are now empty deprecation stubs on PyPI; `nvidia-cudnn-cu13`
 # is the one exception, still suffixed). Pin exactly this set; a fresh `pip install` of the
 # wrong/old names silently gets a stub package that does nothing:
 #   nvidia-cublas==13.3.0.5
@@ -70,6 +70,6 @@ onnxruntime==1.27.0
 #
 # These pip wheels also ship under a DIFFERENT on-disk layout than onnxruntime-gpu 1.27.0's
 # own DLL search code expects (nvidia/cu13/bin/x86_64/ instead of the old nvidia/<pkg>/bin/),
-# so onnxruntime can't find them on its own -- agenticrag/embed_config.py registers both
+# so onnxruntime can't find them on its own; agenticrag/embed_config.py registers both
 # possible DLL directories on PATH at import time to cover it; no extra setup needed beyond
 # `pip install`.

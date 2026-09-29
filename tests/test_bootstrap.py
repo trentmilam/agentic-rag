@@ -1,6 +1,6 @@
 """Fixture-only tests for ``agenticrag.bootstrap.build_registry``'s wiring.
 
-Built entirely against a hand-constructed fake Qdrant client -- no real
+Built entirely against a hand-constructed fake Qdrant client: no real
 ``qdrant_client``, no on-disk collection, no network, no GPU. The fake is
 passed in as ``client=`` so ``build_registry``'s ``created_client`` stays
 ``False`` and it is never closed, and no real Qdrant store is ever opened.
@@ -43,7 +43,7 @@ class FakeBootstrapClient:
     salient-value scan with ``scroll_filter=None``) returns every canned point in
     one page, then signals "no more pages" via ``offset=None``. ``close()`` is
     tracked so the "caller-owned client is left open" contract is checkable. No
-    ``query_points`` here: the build never queries -- modules do that live at query
+    ``query_points`` here: the build never queries; modules do that live at query
     time (see tests/test_qdrant_retrieval.py for that path)."""
 
     def __init__(self, points_by_source_type, *, exists):
@@ -121,7 +121,7 @@ def test_build_registry_assembles_five_modules_from_fake_client(_synthetic_revis
     assert client.closed is False
     # The live client is exposed on the registry so a consumer needing raw store
     # access reuses it instead of opening a SECOND client (Qdrant local mode is
-    # single-opener per folder -- a second open raises).
+    # single-opener per folder; a second open raises).
     assert registry.qdrant_client is client
 
 

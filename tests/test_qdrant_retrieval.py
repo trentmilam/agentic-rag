@@ -3,7 +3,7 @@
 search memoization) and ``QdrantRouter._module_score`` (best-chunk delegated to
 Qdrant for a QdrantModule, unchanged in-memory scan otherwise).
 
-Built against a hand-built fake Qdrant client exposing ``query_points`` -- no real
+Built against a hand-built fake Qdrant client exposing ``query_points``: no real
 Qdrant, no corpus, no network. Only ``consilium.embed.cosine`` (pure Python) is
 used for real, to check the router's fallback path computes the same value.
 """
@@ -121,7 +121,7 @@ class _FakeQdrantModule:
 
 
 class _FakeScanModule:
-    """No ``best_chunk_score`` -- the router must fall back to the in-memory
+    """No ``best_chunk_score``: the router must fall back to the in-memory
     ``max(cosine over chunks)`` scan, exactly like consilium's base Router."""
 
     def __init__(self, centroid_vec, chunk_vecs):

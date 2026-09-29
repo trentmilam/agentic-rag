@@ -3,10 +3,10 @@ resolution, and corroboration-based poison quarantine.
 
 Two failure modes a plain multi-RAG switchboard cannot handle:
 
-* **Cross-corpus conflict** — two different modules assert contradictory facts
+* **Cross-corpus conflict**: two different modules assert contradictory facts
   about the same topic. Resolve by the higher-trust source; *surface* the loser.
-* **Intra-corpus poison** — an injected/outlier chunk asserts a value that
-  contradicts the corroborated majority of its module. Quarantine it — fail-safe.
+* **Intra-corpus poison**: an injected/outlier chunk asserts a value that
+  contradicts the corroborated majority of its module. Quarantine it (fail-safe).
 
 Both reduce to one primitive: two claims that are the **same topic** (high cosine)
 but carry **disjoint magnitude values** are in conflict.
@@ -23,9 +23,9 @@ the defense. Quarantine is fail-safe: it removes only an *uncorroborated* claim
 that conflicts with a *corroborated* one; anything ambiguous is surfaced (flagged),
 never silently dropped.
 
-Deterministic v2 heuristic. Honest limits (see README): word-spelled numbers,
+Deterministic v2 heuristic. Limits (see README): word-spelled numbers,
 non-numeric conflicts (e.g. "Delaware" vs "Nevada"), same-magnitude different-metric
-claims, and paraphrase-flooding are NOT handled here — a future NLI /
+claims, and paraphrase-flooding are NOT handled here; a future NLI /
 trust-provenance layer would be needed to close those gaps.
 """
 from __future__ import annotations
@@ -136,19 +136,19 @@ def _corroboration(chunk, module, embedder, sim_floor: float) -> int:
 def quarantine_poison(module, retrieved, embedder, sim_floor: float = 0.6):
     """Within one module's retrieved ``[(chunk, score), ...]`` classify each chunk:
 
-    * **keep**       — corroborated, or not in any conflict.
-    * **quarantine** — uncorroborated AND conflicts with a corroborated claim
+    * **keep**       : corroborated, or not in any conflict.
+    * **quarantine** : uncorroborated AND conflicts with a corroborated claim
                        (a likely injected outlier).
-    * **flag**       — ambiguous conflict (both sides uncorroborated); surfaced,
-                       never silently dropped — the fail-safe direction.
+    * **flag**       : ambiguous conflict (both sides uncorroborated); surfaced,
+                       never silently dropped, the fail-safe direction.
 
     Returns ``(kept, quarantined, flagged)``.
 
     PERFORMANCE: the same-topic filter below compares ``ch`` against every chunk
-    in ``module`` (all of ``module.chunks`` -- the whole module, which grows with
+    in ``module`` (all of ``module.chunks``, the whole module, which grows with
     corpus size). It therefore uses ``_vec()`` (reuses each chunk's already-computed
     ``.vec``, cached once at module load) rather than ``_same_topic()`` (which takes
-    raw text and always calls ``embedder.embed_one()`` -- an uncached embed call per
+    raw text and always calls ``embedder.embed_one()``, an uncached embed call per
     comparison, cheap only when the candidate set is small, as it is in
     ``detect_conflicts()`` above, which compares a handful of already-selected
     citations rather than a whole module's chunks). This function instead runs one

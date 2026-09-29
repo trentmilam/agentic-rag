@@ -2,8 +2,8 @@
 
 ``part_number`` stays ``None`` for documents that aren't intrinsically about one RFC
 (an IANA registry, spanning many protocols at once); a connector sets it only when the
-whole file is about one specific RFC (its full text, its index card). ``revision``/``supersedes`` are unused in this domain -- an RFC has no revision of its
-own, a new number entirely replaces it -- and are kept only because ``applies_to``
+whole file is about one specific RFC (its full text, its index card). ``revision``/``supersedes`` are unused in this domain (an RFC has no revision of its
+own; a new number entirely replaces it) and are kept only because ``applies_to``
 (set by the errata connector to the RFC number an erratum corrects) shares this same
 result shape.
 """

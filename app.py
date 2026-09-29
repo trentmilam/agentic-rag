@@ -1,6 +1,6 @@
-"""agentic-rag -- real IETF RFC/errata/IANA corpus, interactive chat UI.
+"""agentic-rag: real IETF RFC/errata/IANA corpus, interactive chat UI.
 
-    projects/agentic-rag/.venv/Scripts/python.exe app.py
+    agentic-rag/.venv/Scripts/python.exe app.py
 
 Ask real questions about IETF protocol specifications, RFC authorship/status,
 RFC errata, IANA registries, or which RFC obsoleted another one. Retrieval
@@ -49,7 +49,7 @@ EXAMPLES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Theme -- a quiet, neutral SaaS chrome (one surface, one accent, plain status
+# Theme: a quiet, neutral SaaS chrome (one surface, one accent, plain status
 # pills), with a distinct teal accent for this tool's identity.
 # ---------------------------------------------------------------------------
 _BG = "#F7F8FA"
@@ -145,7 +145,7 @@ def _render_compute(module: str, audited: dict) -> str:
 def _render_retrieval(a: dict) -> str:
     """``answer_v3``'s ``answer`` field is already ``compose()``'s fully-formatted,
     per-citation text (one "- claim [module/doc chunk_id, support=score]" line
-    per kept citation) -- rendered here as one block, one line per kept
+    per kept citation), rendered here as one block, one line per kept
     citation."""
     modules = a.get("module") or []
     if isinstance(modules, str):
@@ -175,8 +175,8 @@ def _render_answer(a: dict) -> str:
 def respond(message: str, history: list):
     # Query-time routing + retrieval run as native Qdrant vector searches (~12s on
     # CPU at the full 321k-chunk scale, since Qdrant local mode is exact brute-force).
-    # Yield an immediate status first -- Gradio streams it before the blocking
-    # answer_v3 call returns -- so the UI shows real progress instead of a blank
+    # Yield an immediate status first: Gradio streams it before the blocking
+    # answer_v3 call returns, so the UI shows real progress instead of a blank
     # indistinguishable from a hang.
     yield ("_Searching the corpus with Qdrant vector search + citation-gated compose "
            "(~12 seconds on CPU; no GPU is used at query time)..._")

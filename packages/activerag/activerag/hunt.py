@@ -2,25 +2,24 @@
 
 When :mod:`activerag.evidence` flags an answer as thin and the orchestrator (a
 later task) decides to hunt, it needs something concrete to hand RAGpack's
-``RAGpack.ingest_and_retry`` as its ``hunt_fn`` -- a
+``RAGpack.ingest_and_retry`` as its ``hunt_fn``: a
 ``Callable[[], Iterable[PathLike]]`` that takes no arguments and returns paths
-to newly-available content (see ``projects/RAGpack/src/ragpack/pipeline.py``).
+to newly-available content (see ``packages/ragpack/src/ragpack/pipeline.py``).
 
 :class:`StagingDirHuntSource` is the simplest honest such source: it watches a
-real local *staging directory* -- one directory per ``source_type`` -- into
-which documents are dropped (by an operator, an upstream fetch job, an export
-step -- this class does not care how). Each time it is called it returns the
+real local *staging directory* (one directory per ``source_type``) into which
+documents are dropped by an operator, an upstream fetch job, or an export
+step; this class does not care how. Each time it is called it returns the
 paths of documents that have appeared since the last call, i.e. the
 *newly-dropped* ones.
 
-**Scope:** this is staging-directory-only. There is
-deliberately NO internet-fetch / live-network hunt source here -- that is out of
-scope. Everything this class does is a local filesystem read; it never touches
-the network.
+Scope: staging-directory-only. There is no internet-fetch or live-network
+hunt source here; that is out of scope. Everything this class does is a
+local filesystem read, and it never touches the network.
 
 **"Newly-dropped" is per-instance, in-memory.** The instance remembers which
 files it has already handed back and never returns the same file twice within
-its own lifetime. On the FIRST call, every document already present is "new"
+its own lifetime. On the first call, every document already present is "new"
 (nothing has been handed back yet). Seen-state lives only in the process; it is
 not persisted across restarts (a fresh instance re-offers whatever is in the
 directory). This matches the "did the hunt actually add anything" signal the
@@ -40,7 +39,7 @@ class StagingDirHuntSource:
 
     Args:
         staging_dir: the drop-zone directory this source watches. It need not
-            exist yet -- until it does (or while it is empty), calls return an
+            exist yet: until it does (or while it is empty), calls return an
             empty list, which is the contract's "found nothing" state, not an
             error.
         source_type: the logical source this staging dir represents (e.g.
@@ -70,7 +69,7 @@ class StagingDirHuntSource:
             else {self._normalize_suffix(s) for s in suffixes}
         )
         # Resolved paths already handed back, so the same file is never returned
-        # twice. In-memory only -- see the module docstring.
+        # twice. In-memory only; see the module docstring.
         self._seen: set[Path] = set()
 
     @staticmethod

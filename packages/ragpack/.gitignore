@@ -14,8 +14,6 @@ dist/
 ragpack_qdrant/
 data/
 *.onnx
-# Cloudflare Wrangler local cache (holds account id / auth state)
-.wrangler/
 # editors / OS
 .idea/
 .vscode/

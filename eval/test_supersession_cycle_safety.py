@@ -1,15 +1,15 @@
 """Dedicated unit test: agenticrag.supersession._walk_supersession's cycle
-safety and its defensive node cap -- both exercised on a SYNTHETIC graph only.
+safety and its defensive node cap, both exercised on a SYNTHETIC graph only.
 
 No cycle is expected to exist in genuine IETF data (a real RFC cannot obsolete
 itself through a chain of real successors), so this deliberately does NOT use
-a real-shaped "RFC<n>" id to build one -- that would misstate a real document.
+a real-shaped "RFC<n>" id to build one; that would misstate a real document.
 "RFCX1"/"RFCX2"/... are permanently-safe, non-numeric-shaped node names built
 by hand for this test only; ``_extract_rfc_key``'s regex (\\bRFC\\s*(\\d+)\\b)
 cannot even match them, so they can never be confused with a real RFC number
 anywhere else in this codebase.
 
-Fast and fully offline -- no corpus, no embedder, no Qdrant.
+Fast and fully offline: no corpus, no embedder, no Qdrant.
 
     python eval/test_supersession_cycle_safety.py
 """
@@ -74,7 +74,7 @@ def test_three_way_branch_reaches_all_successors_plus_predecessor():
 
 def main() -> int:
     # A two-node cycle: RFCX1 obsoletes RFCX2, and RFCX2 obsoletes RFCX1 right
-    # back. Purely synthetic -- this shape cannot occur in genuine IETF data.
+    # back. Purely synthetic; this shape cannot occur in genuine IETF data.
     cyclic_graph = {
         "RFCX1": {"obsoletes": ["RFCX2"], "obsoleted_by": []},
         "RFCX2": {"obsoletes": ["RFCX1"], "obsoleted_by": []},
@@ -87,7 +87,7 @@ def main() -> int:
     )
 
     # A self-loop: RFCX1 "obsoletes" itself. Even more degenerate than a real
-    # cycle -- must not infinite-loop or re-add the start node as its own neighbor.
+    # cycle: must not infinite-loop or re-add the start node as its own neighbor.
     self_loop_graph = {"RFCX1": {"obsoletes": ["RFCX1"], "obsoleted_by": []}}
     history_self = _walk_supersession("RFCX1", self_loop_graph)
     check(
@@ -96,7 +96,7 @@ def main() -> int:
         f"history={history_self}",
     )
 
-    # A 60-node synthetic chain -- exceeds the 50-node defensive cap. The walk
+    # A 60-node synthetic chain exceeds the 50-node defensive cap. The walk
     # must stop ADMITTING new nodes at the cap rather than silently ignoring it.
     chain_graph = {
         f"RFCX{i}": {"obsoletes": [], "obsoleted_by": ([f"RFCX{i + 1}"] if i < 60 else [])}
@@ -110,7 +110,7 @@ def main() -> int:
         f"visited={visited_count}",
     )
 
-    # A real-shaped many-to-many branch (NOT synthetic -- a small hand-built
+    # A real-shaped many-to-many branch (NOT synthetic: a small hand-built
     # subset shaped like RFC 2616's own real graph, to prove branching itself
     # works before the full real-corpus proof in prove_revision_guard.py runs
     # against the actual data): one node obsoleted by three others.

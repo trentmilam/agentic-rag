@@ -3,13 +3,13 @@ exposed as a routable Consilium compute capability.
 
 The retrieval modules (see bootstrap.py) cannot answer "what obsoleted RFC
 2616?" the way an encyclopedic lookup can: RFC 2616's own full text is a real,
-whole, unmodified document -- there is no "current revision" of it, it was
+whole, unmodified document. There is no "current revision" of it, it was
 entirely replaced by six different documents (RFC 7230-7235). The FACT of that
 obsoletion lives in the real IETF Obsoletes/Obsoleted-by graph
 (``data/entities/revisions.json``, built by
 ``ingest.connectors.rfc_index.build_revisions_index`` from the live
 rfc-index.txt), not in any one chunk of prose. This module parses that graph
-once at construction and answers deterministically -- no LLM, no retrieval,
+once at construction and answers deterministically: no LLM, no retrieval,
 no guessing.
 """
 from __future__ import annotations
@@ -28,8 +28,8 @@ _DEFAULT_REVISIONS_PATH = _AGENTIC_RAG_ROOT / "data" / "entities" / "revisions.j
 _RFC_RE = re.compile(r"\bRFC\s*(\d+)\b", re.IGNORECASE)
 
 # Defensive bound on total nodes _walk_supersession will visit. Real IETF
-# obsoletion components are small -- RFC 2616's own 6-successor case is among
-# the largest observed in the live index -- so this guards a hypothetical
+# obsoletion components are small (RFC 2616's own 6-successor case is among
+# the largest observed in the live index), so this guards a hypothetical
 # pathological or cyclic graph, not an expected real limit.
 _MAX_WALK_NODES = 50
 
@@ -48,13 +48,13 @@ def _walk_supersession(start: str, graph: dict, *, max_nodes: int = _MAX_WALK_NO
     """Breadth-first walk of the many-to-many Obsoletes/Obsoleted-by graph, in
     both directions, starting at ``start``. Each node visited after ``start``
     is recorded once as ``{"rfc": <key>, "relation": "obsoletes"|"obsoleted_by",
-    "hops": <int>}`` -- ``relation`` is the edge that reached it from ITS
+    "hops": <int>}``. ``relation`` is the edge that reached it from ITS
     parent in the walk, not a global property of the node.
 
     Cycle-safe: a ``visited`` set means no node is ever re-queued, so a cyclic
-    graph -- never expected in real IETF data (an RFC cannot obsolete itself
-    through a chain of real successors), but structurally possible in a
-    hand-built graph -- still terminates rather than looping forever; see the
+    graph, never expected in real IETF data (an RFC cannot obsolete itself
+    through a chain of real successors) but structurally possible in a
+    hand-built graph, still terminates rather than looping forever; see the
     dedicated cycle-safety unit test (``eval/test_supersession_cycle_safety.py``).
     ``max_nodes`` bounds total visited nodes as a defensive cap (default 50),
     not an expected real limit.
@@ -63,7 +63,7 @@ def _walk_supersession(start: str, graph: dict, *, max_nodes: int = _MAX_WALK_NO
     RFC-number ints (formatted here to "RFC<n>"); a synthetic test graph may
     instead store already-formatted string node names directly (e.g. "RFCX2")
     so a hand-built fixture never has to use a real-shaped "RFC<n>" id to
-    assert something false about a real document -- both forms are accepted.
+    assert something false about a real document; both forms are accepted.
     """
     if start not in graph:
         return []
@@ -79,7 +79,7 @@ def _walk_supersession(start: str, graph: dict, *, max_nodes: int = _MAX_WALK_NO
                 if neighbor in visited:
                     continue
                 if len(visited) >= max_nodes:
-                    continue  # defensive cap reached -- stop admitting new nodes
+                    continue  # defensive cap reached: stop admitting new nodes
                 visited.add(neighbor)
                 order.append({"rfc": neighbor, "relation": relation, "hops": hops + 1})
                 queue.append((neighbor, hops + 1))
@@ -93,7 +93,7 @@ class SupersessionModule(ComputeModule):
 
     Not a ``@dataclass`` subclass (unlike the library's own
     ``FinanceComputeModule``) because it needs one extra constructor argument
-    (``revisions_path``) beyond the base's dataclass fields -- hence the plain-
+    (``revisions_path``) beyond the base's dataclass fields, hence the plain-
     class-calling-``super().__init__`` shape, the usual way a compute adapter
     carries constructor state the dataclass base doesn't declare.
     """

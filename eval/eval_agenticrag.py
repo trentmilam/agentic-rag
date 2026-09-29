@@ -2,8 +2,8 @@
 answers real questions against the real, already-ingested IETF RFC/errata/IANA
 corpus (321,124 chunks across rfc_text/rfc_index/errata/iana_registry) plus the
 real Obsoletes/Obsoleted-by supersession graph (``SupersessionModule``). Uses
-the real embedder (BAAI/bge-base-en-v1.5) -- the exact one that ingested the
-corpus, no hash-embedder shortcut -- so this proves genuine semantic retrieval
+the real embedder (BAAI/bge-base-en-v1.5), the exact one that ingested the
+corpus, with no hash-embedder shortcut, so this proves genuine semantic retrieval
 end-to-end, not wiring alone. Deterministic given the already-ingested corpus;
 no re-ingestion here.
 
@@ -37,7 +37,7 @@ from agenticrag.bootstrap import build_registry, build_router  # noqa: E402
 from agenticrag.embed_config import SETTINGS, get_embedder  # noqa: E402
 from agenticrag.registry_loader import load_chunks_for_doc  # noqa: E402
 
-# One naturally-phrased in-scope query per real source type -- ordinary
+# One naturally-phrased in-scope query per real source type: ordinary
 # technical phrasing, not a parrot of the Descriptor's own subject wording.
 PER_MODULE_CHECKS = [
     ("rfc_text", "How does IP fragmentation and reassembly work in the Internet Protocol?"),
@@ -50,13 +50,13 @@ EXPECTED_SUCCESSORS = {"RFC7230", "RFC7231", "RFC7232", "RFC7233", "RFC7234", "R
 
 OOS_QUESTION = "What's the best way to season a cast iron skillet before first use?"
 
-# A genuinely current (non-obsoleted) real RFC -- checked directly against
+# A genuinely current (non-obsoleted) real RFC, checked directly against
 # data/entities/revisions.json, not assumed: RFC 791, the Internet Protocol
 # (1981), has an empty obsoleted_by list in the live index as of ingest.
 CURRENT_RFC_QUERY = "Is RFC 791 still current?"
 
 # Verified absent from data/entities/revisions.json (whose real max RFC number
-# is 10014 as of ingest) -- not a fabricated dangling pointer, just a real
+# is 10014 as of ingest): not a fabricated dangling pointer, just a real
 # number far beyond any RFC ever issued.
 NOT_FOUND_RFC_QUERY = "Is RFC 99999 still current?"
 
@@ -135,7 +135,7 @@ def main() -> int:
            f"n_chunks={len(current_rfc_text.chunks)}")
 
     t0 = time.time()
-    # Reuse the registry's LIVE Qdrant client -- opening a second here would collide
+    # Reuse the registry's LIVE Qdrant client: opening a second here would collide
     # ("already accessed by another instance": Qdrant local mode is single-opener per
     # folder, and build_registry keeps its client open for live queries).
     rfc2616_chunks = load_chunks_for_doc(TARGET_DOC, registry.qdrant_client, SETTINGS.collection)

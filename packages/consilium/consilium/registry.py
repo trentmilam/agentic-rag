@@ -4,7 +4,7 @@ SECURITY: a ``kind: "compute"`` descriptor's ``adapter`` field names a Python
 module:class to dynamic-import and instantiate (see ``_load_compute`` below).
 ``modules_dir`` (and anything importable via the caller's own ``sys.path`` /
 ``PYTHONPATH``) must therefore be trusted exactly like any other Python import
-path -- loading a descriptor from an untrusted directory is equivalent to
+path: loading a descriptor from an untrusted directory is equivalent to
 running arbitrary code. ``Registry.load`` refuses ``kind: "compute"``
 descriptors unless the caller explicitly opts in via ``allow_compute_adapters=True``.
 """
@@ -27,7 +27,7 @@ class Registry:
         or ``kind`` != ``"compute"``) always load. A ``kind: "compute"`` descriptor
         dynamic-imports and instantiates an arbitrary adapter class (see the
         module-level SECURITY note) and is therefore skipped unless the caller
-        passes ``allow_compute_adapters=True`` -- an explicit statement that
+        passes ``allow_compute_adapters=True``, an explicit statement that
         ``modules_dir`` is trusted."""
         mods: list = []
         for name in sorted(os.listdir(modules_dir)):
@@ -50,7 +50,7 @@ class Registry:
         """Generic ``kind: "compute"`` disk registration: build the Descriptor
         from descriptor.json exactly like a retrieval Module, then dynamic-import
         the ``adapter`` class (``"pkg.mod:Class"``) and instantiate it as
-        ``adapter_cls(embedder, descriptor)``. No sibling-repo coupling -- the
+        ``adapter_cls(embedder, descriptor)``. No sibling-repo coupling: the
         adapter module is whatever the caller's own PYTHONPATH resolves. Only
         reached when the caller has opted in via ``allow_compute_adapters=True``
         (see the module-level SECURITY note)."""

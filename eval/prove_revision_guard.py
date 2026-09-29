@@ -1,4 +1,4 @@
-"""Proves the revision guard's real structural fact -- not a "corrected value"
+"""Proves the revision guard's real structural fact, not a "corrected value"
 demo (there is no single "current revision" of RFC 2616's own text; it was
 entirely superseded by six different documents), but a two-part real proof:
 
@@ -8,11 +8,11 @@ entirely superseded by six different documents), but a two-part real proof:
     because ``data/entities/revisions.json["RFC2616"]["obsoleted_by"]`` is
     non-empty. This script loads the real ``current_only=True`` rfc_text
     module straight from Qdrant (what ``agenticrag.bootstrap.build_registry``
-    actually uses -- 225,809 chunks, confirming that 81,130 chunks across the
+    actually uses: 225,809 chunks, confirming that 81,130 chunks across the
     corpus are excluded as non-current, not just RFC 2616's), then queries
     Qdrant a second time filtered directly by RFC 2616's own doc_id, unfiltered
     by currency. RFC 2616's chunks must be ABSENT from the first load and
-    PRESENT in the second -- proving the data exists and is being filtered by
+    PRESENT in the second, proving the data exists and is being filtered by
     a real, checkable fact, not merely absent from the ingest.
 
 (b) THE CORRECT PATH TO THE ANSWER. ``SupersessionModule`` (see
@@ -23,7 +23,7 @@ entirely superseded by six different documents), but a two-part real proof:
 Both real Qdrant loads happen in-process. The first (``current_only=True``,
 ~226k chunks) takes under a minute (see ``agenticrag.registry_loader``'s scroll
 batch-size note); the second is a doc_id-filtered fetch of RFC 2616's own
-handful of chunks and returns in a couple seconds -- see the printed timings.
+handful of chunks and returns in a couple seconds; see the printed timings.
 
     python eval/prove_revision_guard.py
 """

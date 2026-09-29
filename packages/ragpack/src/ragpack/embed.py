@@ -3,7 +3,7 @@
 - ``device="cpu"``  → fastembed on the ONNX Runtime CPU provider (the default install).
 - ``device="cuda"`` → fastembed on ``CUDAExecutionProvider`` (needs the ``[gpu]`` extra:
   ``fastembed-gpu`` + ``onnxruntime-gpu`` + CUDA/cuDNN on PATH). Fails loudly if the GPU
-  provider isn't actually available — it will NOT silently fall back to CPU.
+  provider isn't actually available; it will NOT silently fall back to CPU.
 - ``device="auto"`` → CUDA if available, else CPU.
 
 The model default (``BAAI/bge-small-en-v1.5``, 384-dim) is small, fast, and strong for
@@ -79,7 +79,7 @@ class Embedder:
 class HashEmbedder:
     """Deterministic, zero-dependency embeddings via the BLAKE2b hashing trick.
 
-    No model download, no GPU, fully offline — lower quality than a real model, but ideal
+    No model download, no GPU, fully offline. Lower quality than a real model, but ideal
     for tests, CI, and a zero-setup quick start. Select with ``Settings(model="hash")`` or
     inject it directly into :class:`ragpack.RAGpack`.
     """

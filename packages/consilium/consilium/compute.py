@@ -1,10 +1,10 @@
-"""Consilium v3 — heterogeneous modules: a COMPUTE module alongside retrieval modules.
+"""Consilium v3: heterogeneous modules, a COMPUTE module alongside retrieval modules.
 
 A ComputeModule is routable like any other (it has a descriptor the router scores),
 but instead of retrieving text it PARSES the query and returns an *audited*,
 deterministic computation (a no-arithmetic-by-LLM audited compute pattern). The
 switchboard can now answer a finance-math query with an exact number AND a text
-query with a cited passage — one router over both.
+query with a cited passage, using one router over both.
 
 Additive: v1/v2 retrieval modules and their evals are untouched.
 """
@@ -56,7 +56,7 @@ def _parse_params(query: str) -> dict:
 class ComputeModule:
     """Generic BASE for a routable compute capability: no text corpus (``chunks``
     stays empty so the router's best-chunk term is 0), ``retrieve()`` is a no-op,
-    and ``centroid()`` is memoized from the descriptor -- so the router scores it
+    and ``centroid()`` is memoized from the descriptor, so the router scores it
     exactly like a retrieval :class:`~consilium.module.Module`. Subclasses (here
     :class:`FinanceComputeModule`; disk-registered adapters via
     ``Registry.load``'s ``kind: "compute"`` path) implement ``compute(query)``.
@@ -147,7 +147,7 @@ def answer_v3(query: str, registry, embedder, router) -> dict:
     answer = None
     if texts:
         from .composer import compose
-        # compose() only reads .abstained + .selected (composer.py) -- a fresh
+        # compose() only reads .abstained + .selected (composer.py), so this is a fresh
         # RouteResult over just the text subset, not a mutation of the shared rr.
         text_rr = replace(rr, selected=texts, abstained=False)
         answer = compose(query, text_rr, registry, embedder, harden=True)

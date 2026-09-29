@@ -1,7 +1,7 @@
 """Source-document manifest: schema + load/validate for sources.yaml.
 
 The manifest is the single record of what's actually in the corpus and where it came
-from -- every document chain-rag ingests must have an entry here. Populated by the
+from; every document chain-rag ingests must have an entry here. Populated by the
 production research pass; the smoke tests use a small manifest with the same schema.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def resolve_local_path(local_path: str) -> Path:
     """A manifest's local_path (e.g. "data/raw/bitcoin/x.pdf") is always relative
-    to the chain-rag project root, never to the invoking process's cwd -- so
+    to the chain-rag project root, never to the invoking process's cwd, so
     ingest/eval/app all resolve a document the same way regardless of where
     they're launched from."""
     p = Path(local_path)
