@@ -1,22 +1,12 @@
 # linkgraph
 
-**A queryable relationship graph across documents: which RFC obsoletes which,
-which erratum corrects what, and which entities keep turning up together.
-Built from a real 21,830-mention extraction, not a fixture.**
+Relationship graph over documents: RFC obsoletes/updates, errata corrections, entity co-mentions.
 
-Retrieval systems treat documents as independent chunks. They are not. An RFC is
-superseded by six others; an erratum corrects a specific section; two protocols are
-discussed together often enough that the co-occurrence is itself a signal. `linkgraph`
-turns an entity-mention stream into a graph of those relationships and lets you ask
-about them directly.
+Built from a 21,830-mention extraction of the IETF RFC corpus. Standard library only. Deterministic. Offline.
 
-Pure standard library. Deterministic. Fully offline.
+## Real corpus
 
-## Measured on the real corpus
-
-`python smoke_real_corpus.py`, against the entity-mention export produced by
-[agentic-rag](https://github.com/trentmilam/agentic-rag)'s ingest of the live IETF RFC
-corpus:
+`python smoke_real_corpus.py`, against the entity-mention export from [agentic-rag](https://github.com/trentmilam/agentic-rag)'s ingest.
 
 | | |
 |---|---:|
@@ -28,39 +18,23 @@ corpus:
 | ` ` `updates` | 2,352 |
 | ` ` `corrects` | 5,061 |
 
-Every one of those seven numbers is **asserted** by that script, not merely printed: if
-the graph changes shape, the script fails and names the figure this README publishes.
-That was a real gap: it used to assert only `corrects > 0`, which a graph half this size
-would have passed just as happily.
+The script asserts all seven numbers.
 
-## What the edges mean
+## Edge types
 
-- `obsoletes` / `updates` is the genuine IETF supersession relation, recovered from
-  the RFC index. It is many-to-many, not a linear revision chain: RFC 2616 is obsoleted
-  by six separate RFCs (7230-7235), and a graph captures all of them, where a
-  "latest version" pointer would have to pick one and be wrong.
-- `corrects` is a community-submitted erratum against a specific RFC.
-- `co_mentions` is a scored, undirected, weaker signal: two entities cited in the same
-  source document. Useful for neighbourhood expansion, never treated as a factual claim.
+- `obsoletes` / `updates`: IETF supersession from the RFC index. Many-to-many. RFC 2616 is obsoleted by six RFCs (7230-7235).
+- `corrects`: community-submitted erratum against a specific RFC.
+- `co_mentions`: scored, undirected. Two entities cited in the same source document.
 
-## Where it is used
+## Used by
 
-`linkgraph` backs the relationship tools in
-[agentic-rag](https://github.com/trentmilam/agentic-rag)'s MCP server: `get_related`
-dispatches into it through that repo's `agenticrag/relationships.py` bridge. It is
-kept separate from agentic-rag's own `SupersessionModule`, which answers the same
-obsoletion questions from an independently built source, so the two can be
-cross-checked against each other over the same underlying IETF facts. It is not in the
-chat answer path; the demo and eval there never import it.
-
-It also exports a flattened graph for the `graphrx` structural linter in
-[rag-reliability](https://github.com/trentmilam/rag-reliability), which checks the result
-for the entity-merge defects that corrupt downstream answers.
+- [agentic-rag](https://github.com/trentmilam/agentic-rag) MCP server: `get_related` via `agenticrag/relationships.py`. Not in the chat answer path.
+- Separate from agentic-rag's `SupersessionModule` (independent source for the same obsoletion questions).
+- Flattened export for the `graphrx` linter in [rag-reliability](https://github.com/trentmilam/rag-reliability).
 
 ## Quickstart
 
-This package is `packages/linkgraph` in the `agentic-rag` monorepo. From the
-repo root, after `pip install -e .`:
+`packages/linkgraph` in the `agentic-rag` monorepo. From the repo root, after `pip install -e .`:
 
 ```bash
 python -m pytest packages/linkgraph -q   # 43 tests pass standalone in ~0.2s
@@ -86,24 +60,18 @@ graph.get_corrections("RFC2616")[:5]
 # -> ['1483', '1619', '2301', '2645', '2806']
 ```
 
-## Reproducing the corpus numbers
+## Regenerating the corpus numbers
 
-`smoke_real_corpus.py` reads `agentic-rag/data/entities/candidates.jsonl` and does not
-fetch or ingest anything itself. To regenerate that file, run agentic-rag's ingest: it
-is a multi-hundred-megabyte fetch from the IETF and takes minutes on a GPU or hours on
-CPU, which is why it is not committed here. The 50-test suite needs none of it.
+- `smoke_real_corpus.py` reads `agentic-rag/data/entities/candidates.jsonl`.
+- To regenerate it, run agentic-rag's ingest: multi-hundred-megabyte IETF fetch, minutes on GPU, hours on CPU. Not committed.
+- The 50-test suite does not need it.
 
-## What this graph doesn't claim
+## Limitations
 
-- The `graphrx` hand-off, and only that hand-off, needs the `rag-reliability` sibling
-  cloned next to the agentic-rag repo. The core graph builds and every other test runs
-  without it.
-- `co_mentions` is a co-occurrence heuristic. It says two things were discussed together,
-  which is not a claim that they are related.
-- Entity resolution is exact-identifier matching on RFC/errata numbers. It does not
-  attempt fuzzy name resolution, and would need real work before it could.
-- `store.py` provides SQLite persistence and is tested, but nothing in the demo or eval
-  path uses it yet.
+- `graphrx` hand-off needs the `rag-reliability` sibling cloned next to agentic-rag. Nothing else does.
+- `co_mentions` is a co-occurrence heuristic. Not a claim that the entities are related.
+- Entity resolution is exact-identifier matching on RFC/errata numbers. No fuzzy names.
+- `store.py` (SQLite persistence) is tested but unused by the demo and eval.
 
 ## License
 

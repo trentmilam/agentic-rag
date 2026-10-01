@@ -2,23 +2,13 @@
 
 [![CI](https://github.com/trentmilam/agentic-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/trentmilam/agentic-rag/actions/workflows/ci.yml)
 
-Cited, revision-aware retrieval over a corpus drawn from the IETF RFC
-ecosystem: RFC full text, the RFC index's Obsoletes/Obsoleted-by/Updates
-supersession graph, community-submitted RFC errata, and IANA
-protocol-parameter registries, fetched over HTTPS (`corpus_fetch/`) and
-ingested through [`ragpack`](packages/ragpack) into a searchable vector store
-(321,124 chunks), then routed and citation-gated through the
-[`consilium`](packages/consilium) spine.
+Cited, revision-aware retrieval over the IETF RFC corpus (~321k chunks).
 
-Ask a real question about an IETF protocol spec, an RFC's authorship/status, a
-real errata correction, or an IANA registry entry, and get back an answer built
-entirely out of **real cited chunks, or an honest abstain**. The one exception
-is an obsoletion question ("what replaced RFC 2616?"): there is no "current
-revision" of RFC 2616's own text to retrieve (it was entirely superseded by six
-later documents, RFC 7230-7235, IETF's own famous multi-way obsoletion case),
-so that is answered by `SupersessionModule`, a deterministic graph lookup over
-the real Obsoletes/Obsoleted-by graph, not retrieval. **No LLM anywhere in the
-answer path.**
+- Sources: RFC full text, RFC index supersession graph, RFC errata, IANA registries
+- Ingest via [`ragpack`](packages/ragpack), routed and citation-gated by [`consilium`](packages/consilium)
+- Answers are cited chunks or an abstain
+- Obsoletion questions ("what replaced RFC 2616?") are answered by `SupersessionModule`, a deterministic graph lookup
+- No LLM in the answer path
 
 ## Quickstart
 
@@ -31,24 +21,11 @@ py -3.12 -m venv .venv
 .venv\Scripts\python scripts\verify.py
 ```
 
-That is the whole bootstrap. The editable install is what makes `import consilium`,
-`import ragpack`, `import linkgraph`, `import activerag` and `import chainrag` resolve:
-`pyproject.toml`'s `package-dir` maps each name into `packages/`.
-
-Answering a real question additionally needs the ingested corpus; see
-[The corpus](#the-corpus) and [Verify](#verify).
+Answering a real question needs the ingested corpus. See [The corpus](#the-corpus) and [Verify](#verify).
 
 ## One repo, five merged tools
 
-`agentic-rag` used to import `consilium` and `linkgraph` from sibling repositories by
-inserting their roots on `sys.path`, and required `RAGpack` pip-installed editable from a
-third. Cloning it meant cloning four repos at three commits pinned in three separate files,
-which had already drifted apart from each other. `linkgraph` also read this repo's data
-file, so those two imported each other across a repository boundary.
-
-They are one repo now. Each merged tool kept its whole tree under `packages/<name>/`, so
-everything it resolves relative to its own root still resolves, and each kept its own
-commit history rather than being squashed into an import commit:
+Each tool keeps its own tree and commit history under `packages/<name>/`.
 
 | package | what it is | tests |
 |---|---|---|
@@ -56,20 +33,12 @@ commit history rather than being squashed into an import commit:
 | [`packages/ragpack`](packages/ragpack) | ingest, chunking, embedding, the Qdrant store wrapper | 31 |
 | [`packages/linkgraph`](packages/linkgraph) | the cross-document relationship graph behind the MCP relationship tools | 50 |
 | [`packages/activerag`](packages/activerag) | evidence-thinness detection and bounded hunt-and-retry | 54 |
-| [`packages/chainrag`](packages/chainrag) | a second vertical over blockchain protocol docs, proving the spine is not corpus-specific | -- |
+| [`packages/chainrag`](packages/chainrag) | a second vertical over blockchain protocol docs | -- |
 
-They are nested under `packages/` rather than sitting at the repo root for a concrete
-reason: a top-level directory named `consilium` shadows the `consilium` package as an
-implicit namespace package, because the working directory precedes the editable install on
-`sys.path`. Imports then resolve to an empty namespace and `consilium.__file__` is `None`.
-CI asserts every package resolves to a file inside this repo, so that class of silent
-mis-binding fails the build instead of passing every test against the wrong copy.
-
-`rag-reliability` is the one dependency still outside this repo. It supplies `graphrx`,
-`headroom`, `vecstamp`, `chunkledger`, `plumbline` and `legigate` to three of the tools
-above, and is resolved by path today; packaging it so it can be a declared dependency is
-the outstanding follow-up. CI checks it out pinned and **fails if those integration tests
-skip**, so the one remaining path dependency cannot rot unnoticed.
+- CI asserts every package resolves to a file inside this repo
+- `rag-reliability` is the one outside dependency: `graphrx`, `headroom`, `vecstamp`, `chunkledger`, `plumbline`, `legigate`
+- Resolved by path today; packaging it is open
+- CI checks it out pinned and fails if those integration tests skip
 
 ## The corpus
 
@@ -80,124 +49,81 @@ skip**, so the one remaining path dependency cannot rot unnoticed.
 | `errata` | real community-submitted RFC corrections | 7,295 | 7,295 (n/a: no revision concept) |
 | `iana_registry` | 7 real IANA protocol-parameter registries, rendered as markdown tables | 1,036 | 1,036 (n/a: no revision concept) |
 
-321,124 total real chunks, embedded with the real `BAAI/bge-base-en-v1.5`
-model. `rfc_text`/`rfc_index` are the only source types with a revision
-concept: `is_current` there is a real structural fact (see [the revision
-guard](#the-revision-guard-proven)), not guessed.
+- 321,124 chunks total, embedded with `BAAI/bge-base-en-v1.5`
+- `is_current` applies to `rfc_text` and `rfc_index` only (see [the revision guard](#the-revision-guard-proven))
+- `data/` is gitignored; the corpus is fetched from rfc-editor.org and iana.org
 
 ## Five modules, one router
 
-`agenticrag/bootstrap.py::build_registry` assembles a real 5-module consilium
-`Registry`: the 4 retrieval modules above (each loaded straight from Qdrant,
-`current_only=True` by default; see `agenticrag/registry_loader.py`), plus
-`SupersessionModule` (`agenticrag/supersession.py`), a `ComputeModule` that
-parses `data/entities/revisions.json` (the real Obsoletes/Obsoleted-by graph
-for all 9,794 RFCs in the live index) once at construction and answers
-obsoletion questions with a deterministic, cycle-safe graph walk (bounded at 50
-visited nodes: a defensive cap, not an expected real limit; real IETF
-obsoletion components are small).
+`agenticrag/bootstrap.py::build_registry` assembles a 5-module consilium `Registry`.
 
-`build_registry` also fails loud if the process's configured embedder does not
-match the one that ingested the store (`verify_embedder_marker`, called first,
-since otherwise cosine scores would be silently meaningless), and closes any
-Qdrant client it opened itself once the modules are loaded (retrieval is fully
-in-memory afterward), so it does not hold the local-mode store's lock for the
-caller's whole process lifetime.
+- 4 retrieval modules, loaded from Qdrant with `current_only=True` (`agenticrag/registry_loader.py`)
+- `SupersessionModule` (`agenticrag/supersession.py`): graph walk over `data/entities/revisions.json` (9,794 RFCs), cycle-safe, capped at 50 visited nodes
+- `verify_embedder_marker` runs first and fails if the configured embedder differs from the one that ingested the store
 
-`errata`'s `trust_tier` (0.55, well below `rfc_text`/`rfc_index`/`iana_registry`'s
-0.9-0.95) is measured, not guessed: of 5,061 real errata records ingested,
-**only 2,400 (47.4%) are `Verified`** by the RFC Editor; 1,781 (35.2%) are
-`Held for Document Update`, 679 (13.4%) are outright `Rejected`, and 201 (4.0%)
-are still `Reported`. Fewer than half of real submitted corrections are
-RFC-Editor-confirmed, so this module corrects the primary text without being
-uniformly authoritative itself.
+`errata` trust tier is 0.55, against 0.9-0.95 for `rfc_text`, `rfc_index` and `iana_registry`. Of 5,061 errata records:
+
+- 2,400 (47.4%) Verified
+- 1,781 (35.2%) Held for Document Update
+- 679 (13.4%) Rejected
+- 201 (4.0%) Reported
 
 ## MCP server
 
-`agenticrag/mcp/server.py` exposes the answer path as a
-[Model Context Protocol](https://modelcontextprotocol.io) server over stdio
-(`mcp>=1.28.1`, FastMCP). Four tools:
+`agenticrag/mcp/server.py`: [Model Context Protocol](https://modelcontextprotocol.io) server over stdio (`mcp>=1.28.1`, FastMCP). Four tools:
 
-- `search(query)`: the full cited/abstain answer path (`consilium.compute.answer_v3`), passed through verbatim (an honest abstain stays an abstain);
-- `get_obsoletion_chain(rfc_id)` / `get_corrections(rfc_id)` / `get_related(entity_id)`: the relationship graph, via the `linkgraph` sibling (`agenticrag/relationships.py`); each returns a documented `{"ok": false, "fallback": ...}` envelope if that sibling is absent.
+- `search(query)`: cited/abstain answer path (`consilium.compute.answer_v3`), passed through verbatim
+- `get_obsoletion_chain(rfc_id)`, `get_corrections(rfc_id)`, `get_related(entity_id)`: relationship graph via `linkgraph` (`agenticrag/relationships.py`); each returns `{"ok": false, "fallback": ...}` if `linkgraph` is absent
 
-Run it: `.venv\Scripts\python -m agenticrag.mcp.server` (stdio transport: an
-MCP client launches it and speaks the protocol over stdin/stdout). The tool
-*logic* is import-light and has no `mcp`/Qdrant dependency, so it unit-tests
-without either (`agenticrag/mcp/test_server.py`).
+```bat
+.venv\Scripts\python -m agenticrag.mcp.server
+```
+
+Tool logic has no `mcp` or Qdrant dependency (`agenticrag/mcp/test_server.py`).
 
 ## Verify
 
-**Quick verify** (fast, corpus-free, no ingested corpus needed):
+Quick verify (corpus-free):
 
 ```bat
 verify.bat        :: or:  .venv\Scripts\python -m pytest -q
 ```
 
-Runs every corpus-free suite: agentic-rag's own MCP tool-wrapper and
-supersession cycle-safety tests, plus the shared pytest suites of four of the
-five merged packages under `packages/` (`consilium`, `ragpack`, `linkgraph`,
-and `activerag`). `chainrag` ships no pytest suite of its own; its eval runs
-separately (see "Full verify" below). This is what CI runs on every push (see
-the badge above).
+- Runs agentic-rag's MCP wrapper and supersession cycle-safety tests, plus the pytest suites of `consilium`, `ragpack`, `linkgraph`, `activerag`
+- `chainrag` has no pytest suite; its eval runs separately
+- CI runs this on every push
 
-**Full verify** (needs the ingested 321k-chunk corpus from the Quickstart):
+Full verify (needs the ingested corpus):
 
 ```bat
 .venv\Scripts\python eval\eval_agenticrag.py
 ```
 
-Deterministic given the already-ingested corpus; no re-ingestion. Uses the real
-embedder (the exact one that ingested the corpus), so this proves genuine
-semantic retrieval end-to-end, not wiring alone. Takes ~3.3 min on this
-hardware (measured, full run: 196s): a one-time ~60s registry build (a single
-scan of the corpus for the small poison-quarantine set, not a load of all 321k
-vectors), then the router/answer passes at ~12s each. Each pass runs routing and
-retrieval as native Qdrant vector searches; Qdrant's embedded local mode is exact
-brute-force (no ANN index), so a search still scans the filtered subset, but in
-native code, materializing only the top-k, ~16x faster than the old pure-Python
-per-chunk scan. (Sub-second search would need Qdrant server mode's HNSW index;
-local mode keeps the repo self-contained: no server to run.) It
-checks: one in-scope
-query per source type (sensible module + >=1 real citation); the RFC 2616
-obsoletion query (successor set is **exactly** `{7230, 7231, 7232, 7233, 7234,
-7235}`); one out-of-scope query (honest abstain); the revision-guard structural
-exclusion (below); a genuinely current RFC (791) resolving `current`; and an
-absent RFC number (99999) resolving `not_found`, not a crash.
+- Deterministic, no re-ingestion, real embedder
+- ~3.3 min (measured, 196s): ~60s registry build, then ~12s per router/answer pass
+- Qdrant local mode: exact brute-force search, no ANN index
+- Checks:
+  - one in-scope query per source type (module + >=1 citation)
+  - RFC 2616 obsoletion: successor set exactly `{7230, 7231, 7232, 7233, 7234, 7235}`
+  - one out-of-scope query: abstain
+  - revision-guard structural exclusion
+  - RFC 791 resolves `current`
+  - RFC 99999 resolves `not_found`
 
-`eval/prove_revision_guard.py` is the same structural proof as a standalone,
-narrated script. `eval/smoke_ingest_real.py` proves the fetch, ingest, and Qdrant
-wiring with the zero-cost `HashEmbedder` (needs `corpus_fetch.fetch_all` to have
-run, but no GPU/embedding model).
+`eval/prove_revision_guard.py`: standalone narrated revision-guard proof.
+`eval/smoke_ingest_real.py`: fetch, ingest and Qdrant wiring with `HashEmbedder` (needs `corpus_fetch.fetch_all` run first; no GPU).
 
 <a name="the-revision-guard-proven"></a>
 ## The revision guard, proven
 
-RFC 2616 (HTTP/1.1) is a real, single, whole document: there is no "current
-revision" of it; it was entirely superseded by six different documents. The
-guard property here is two real, checkable facts, not one "corrected value":
+RFC 2616 (HTTP/1.1) was entirely superseded by six documents (RFC 7230-7235).
 
-1. **Structural exclusion.** RFC 2616's own `rfc_text` chunks exist in Qdrant
-   (loading the `rfc_text` module a second time with `current_only=False`
-   proves they're there) but are absent from the default `current_only=True`
-   module every query actually uses, because
-   `data/entities/revisions.json["RFC2616"]["obsoleted_by"]` is real and
-   non-empty. The data exists; it's structurally filtered, not accidentally
-   missing.
-2. **The correct path to the answer.** `SupersessionModule` is the explicit way
-   to learn what happened to RFC 2616: a query naming it returns the real
-   6-way successor list (RFC 7230-7235).
+1. Structural exclusion: its `rfc_text` chunks exist in Qdrant (`current_only=False` shows them) and are absent from the default `current_only=True` module, because `data/entities/revisions.json["RFC2616"]["obsoleted_by"]` is non-empty.
+2. Correct path: `SupersessionModule` returns the 6-way successor list (RFC 7230-7235).
 
-## Router calibration: measured, not guessed
+## Router calibration
 
-`consilium.router.Router`'s stated library defaults (`floor=0.11`,
-`anchor_centroid=0.25`, `anchor_best_chunk=0.25`) assume a near-zero baseline
-cosine between unrelated text: true for a bag-of-words `HashEmbedder`, not
-necessarily true for a real dense embedder over a 321k-chunk corpus (the same
-gap shows up even at a much smaller ~1,055-chunk scale). `agenticrag/calibrate.py`
-measures this directly against the real corpus + real embedder rather than
-assuming it; see `agenticrag/bootstrap.py::ROUTER_KWARGS` for the resulting
-per-instance kwargs and the real numbers that justified the decision.
+`consilium.router.Router` defaults: `floor=0.11`, `anchor_centroid=0.25`, `anchor_best_chunk=0.25`. `agenticrag/calibrate.py` measures scores against the real corpus and embedder. Per-instance kwargs: `agenticrag/bootstrap.py::ROUTER_KWARGS`.
 
 ```bat
 .venv\Scripts\python agenticrag\calibrate.py
@@ -205,48 +131,27 @@ per-instance kwargs and the real numbers that justified the decision.
 
 ## GPU note (ingest only)
 
-GPU matters for exactly one step: the corpus **ingest** (`ingest/run_ingest.py`),
-which embeds ~321k chunks with `BAAI/bge-base-en-v1.5` via `onnxruntime`. At
-**query time** you only embed the (short) query string, so the launchers run fine
-on CPU with no GPU setup, which is why they no longer touch any GPU config.
+- GPU is used for ingest (`ingest/run_ingest.py`, `onnxruntime`); queries run on CPU
+- `onnxruntime-gpu` without matching CUDA runtime DLLs prints a red `CUDAExecutionProvider` / `cublasLt64_*.dll` error and falls back to CPU
+- Warning is harmless; appears on ingest and query runs
+- CPU ingest: ~6 chunks/sec measured, ≈14.9 hours computed for 321,124 chunks
+- RTX 5090: ~650 chunks/sec measured, ≈8 minutes
 
-Expected-and-harmless warning: if `onnxruntime-gpu` is installed but its matching
-CUDA runtime DLLs aren't on the search path, you'll see an alarming red
-`CUDAExecutionProvider` / `Error loading ... cublasLt64_*.dll ... missing` block:
-**on any run, ingest or query**, not just ingest. It is not a failure: onnxruntime
-falls back to CPU and continues (for a query the embed is one short string, so the
-CPU fallback is instant). Ignore it, or install the DLLs below to silence it.
-
-For a fast ingest, `onnxruntime-gpu`'s CUDA execution provider needs those CUDA
-runtime DLLs on the DLL search path. `pip install onnxruntime-gpu` alone does
-**not** bundle them, and without them onnxruntime falls back to CPU (measured:
-~6 chunks/sec; computed: ≈14.9 hours for the full 321,124-chunk corpus) rather
-than raising. To get real GPU execution (measured: ~650 chunks/sec on an RTX 5090,
-i.e. ≈8 minutes for the full corpus), install the matching CUDA runtime wheels
-into this repo's own venv, e.g.:
+Optional CUDA runtime wheels (match onnxruntime-gpu 1.27.0 / CUDA 13 in `requirements.txt`):
 
 ```bat
 .venv\Scripts\python -m pip install nvidia-cublas nvidia-cuda-runtime nvidia-cufft nvidia-cudnn-cu13
 ```
 
-(these exact versions match the onnxruntime-gpu 1.27.0 / CUDA 13 build this repo
-pins in `requirements.txt`; only `nvidia-cudnn-cu13` still carries a CUDA-major-version
-suffix, the others no longer do),
-or put any CUDA-enabled PyTorch install's `torch/lib` directory on `PATH` before
-running the ingest. Either way this is an **optional acceleration of the one-time
-ingest**, never required to run the demo or serve queries.
+Or put a CUDA-enabled PyTorch `torch/lib` directory on `PATH`.
 
 ## Ingest re-runs (known limitation)
 
-`ingest/run_ingest.py` supports a from-scratch `--recreate` rebuild and a fast
-incremental path (only re-embeds raw files whose content hash changed). The
-incremental path has two known limitations, deliberately not papered over: (1) it
-keys "changed" purely on each raw file's byte hash, so if an RFC becomes newly
-obsoleted in a later `rfc-index.txt` refresh *without its own text file
-changing*, its `is_current` flag can go stale; and (2) it does not delete
-orphaned Qdrant points for a document that re-ingests to fewer chunks. For a
-guaranteed-consistent store, run `ingest/run_ingest.py --recreate` (a full
-rebuild). Closing both limitations in the incremental path is future work.
+`ingest/run_ingest.py`: `--recreate` for a full rebuild, incremental path otherwise (re-embeds files whose content hash changed).
+
+- Incremental: `is_current` can go stale if an RFC is newly obsoleted in a later `rfc-index.txt` and its own text file is unchanged
+- Incremental: orphaned Qdrant points are not deleted when a document re-ingests to fewer chunks
+- Use `--recreate` for a consistent store
 
 ## Layout
 
@@ -285,9 +190,4 @@ run_demo.py           scripted 3-question narrated transcript
 
 Code: [MIT](LICENSE) (c) 2026 Trent Milam.
 
-The corpus is **not** included in this repo (`data/` is gitignored); it is
-fetched at build time from rfc-editor.org and iana.org. IETF RFC/errata text is
-subject to the [IETF Trust Legal Provisions](https://trustee.ietf.org/documents/trust-legal-provisions/)
-(the fetch preserves each document's own copyright/Trust notice intact); IANA
-registry data is published by IANA. This project redistributes none of it. It
-fetches it, locally, on your machine.
+Corpus is not included. It is fetched locally from rfc-editor.org and iana.org. IETF RFC/errata text is subject to the [IETF Trust Legal Provisions](https://trustee.ietf.org/documents/trust-legal-provisions/); each fetched document keeps its own copyright notice. IANA registry data is published by IANA. This project redistributes none of it.

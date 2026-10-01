@@ -1,19 +1,13 @@
-# Consilium: a multi-RAG switchboard ("private research desk")
+# Consilium
 
-Consilium answers questions over several separate document collections, for example legal
-contracts, market filings, and an HR handbook. Ask something in plain language, and it works out
-which collection can answer, replies with a citation to the exact source it came from, and stays
-silent instead of guessing when nothing in the collections supports an answer.
+Multi-RAG switchboard over separate document collections (legal contracts, market filings, an HR handbook).
 
-Under the hood this is retrieval-augmented generation, or RAG: looking up relevant passages before
-answering, instead of answering from a language model's memory alone. Each document collection is
-its own module, with its own retriever, the piece that searches for passages relevant to a query.
-A router scores every incoming query against each module's descriptor and selects the modules that
-clear a confidence floor. It fans out to more than one module when a question spans subjects, and
-it abstains, answering "I don't know" rather than guessing, when none of them do. An integrity gate
-then checks every claim in the drafted answer against its source passage before letting it through.
-
-This is v1, a portfolio-tier build: self-contained, deterministic, and runs fully offline.
+- Routes a plain-language query to the collection that can answer.
+- Cites the exact source.
+- Abstains when nothing supports an answer.
+- Router scores each query against module descriptors, selects those above a floor, fans out for cross-domain queries.
+- Integrity gate checks every claim against its source passage.
+- v1. Self-contained, deterministic, offline.
 
 ## Quickstart
 
@@ -33,20 +27,12 @@ python run_demo.py --with-compute --query "Black-Scholes call price for spot 100
 python eval/run_all.py
 ```
 
-No dependencies beyond the Python standard library. Retrieval runs on a vendored, pure-Python
-hashing embedder (the component that turns text into vectors for comparison), so there's no numpy,
-no network access, no model download, and every run is byte-for-byte reproducible. Requires
-Python 3.9+.
+- Python 3.9+, standard library only.
+- Pure-Python hashing embedder. No numpy, network or model download. Reproducible byte for byte.
 
-## Measured head-to-head vs a naive no-gate RAG (from `eval/eval_baseline.py`)
+## Head-to-head vs naive no-gate RAG
 
-Consilium's central claim is narrow: it abstains, or drops a claim, instead of confidently
-hallucinating one. A self-graded perfect score would prove nothing, so `eval/eval_baseline.py` runs
-a naive incumbent RAG on the same cases, same corpus, and same embedder: literally Consilium minus
-its three gates (the router's abstention floor and anchor gate, the integrity gate's claim-to-source
-binding, and the query-relevance floor). It measures the difference. The baseline is not a
-strawman: it answers all 11 in-scope queries with real citations, at parity with Consilium. It only
-fails on the out-of-scope and fabricated-claim cases.
+`eval/eval_baseline.py`. Same cases, corpus and embedder. Baseline is Consilium without its three gates: router abstention floor and anchor gate, integrity-gate claim binding, query-relevance floor.
 
 | case-set (N) | naive baseline | Consilium |
 |---|---|---|
@@ -55,13 +41,9 @@ fails on the out-of-scope and fabricated-claim cases.
 | fabricated claim, emitted uncited (1) | **1** ← ships it | **0** ← dropped |
 | **UNSAFE outputs (of 5)** | **5** | **0** |
 
-Measured gap: the naive RAG emits 5/5 unsafe outputs (4 confident answers to out-of-scope queries
-plus 1 fabricated uncited claim), where Consilium emits 0/5, at zero cost to in-scope recall (11/11
-for both). The gates eliminate the entire hallucination surface these cases probe without narrowing
-what the system will legitimately answer. Numbers observed, not asserted. Re-run with
-`python eval/eval_baseline.py`.
+Baseline emits 5/5 unsafe outputs, Consilium 0/5. In-scope recall is 11/11 for both. Re-run with `python eval/eval_baseline.py`.
 
-## Measured results (Consilium alone, from `eval/eval.py`, observed rather than asserted)
+## Results (`eval/eval.py`)
 
 | metric | value | target |
 |---|---|---|
@@ -71,138 +53,89 @@ what the system will legitimately answer. Numbers observed, not asserted. Re-run
 | citation coverage (every emitted claim bound to a source span) | **1.000** (11/11) | == 1.00 |
 | fabricated-claim rejection (unsupported claim dropped by the gate) | **True** | True |
 
-The eval exercises the gate against a real adversarial case: an injected claim with no source
-("Acme Corp secretly plans to acquire Globex...") is dropped, not emitted.
+Adversarial case: an injected claim with no source ("Acme Corp secretly plans to acquire Globex...") is dropped.
 
 ## How it works
 
-Five units, each with one job (each understandable and testable in isolation):
-
-- Module (`consilium/module.py`) = `{corpus, retriever, descriptor}`. The descriptor
-  (`descriptor.json`: name, subjects, example queries, authority, freshness, trust_tier) is the
-  module's public face: the router reasons over it without reading the corpus.
+- Module (`consilium/module.py`): `{corpus, retriever, descriptor}`. Descriptor (`descriptor.json`): name, subjects, example queries, authority, freshness, trust_tier.
 - Registry (`consilium/registry.py`): discovers modules on disk, exposes descriptors.
-- Router / switchboard (`consilium/router.py`): scores each module from
-  `0.45·descriptor-centroid + 0.20·best-chunk + 0.35·subject-overlap`; selects every module above an
-  absolute floor (fan-out for cross-domain queries); abstains when none clear the floor.
-- Integrity gate (`consilium/integrity.py`): binds each claim to its best-supporting span; an
-  unsupported claim is dropped and a wholly-unsupported answer abstains.
-- Composer (`consilium/composer.py`): assembles the surviving span-bound claims into one cited
-  answer across modules.
+- Router (`consilium/router.py`): score = `0.45·descriptor-centroid + 0.20·best-chunk + 0.35·subject-overlap`. Selects every module above an absolute floor. Abstains when none clear it.
+- Integrity gate (`consilium/integrity.py`): binds each claim to its best-supporting span. Unsupported claims are dropped. A wholly unsupported answer abstains.
+- Composer (`consilium/composer.py`): assembles surviving claims into one cited answer.
 
-Flow: `query → router (descriptors → module set | abstain) → per-module retrieve → integrity gate
-→ composer → cited answer + routing/audit trace`.
+Flow: `query → router (descriptors → module set | abstain) → per-module retrieve → integrity gate → composer → cited answer + routing/audit trace`.
 
-## Modules in this demo (all synthetic / public-safe)
+## Demo modules
 
-- markets: SEC-style filings + a market glossary (revenue, EPS, EBITDA).
-- legal: NDA / MSA templates + a GDPR summary (confidentiality, IP, data rights).
-- handbook: a synthetic firm handbook (PTO, expenses, security policy).
+Synthetic, public-safe.
 
-Add a module by dropping a folder under `modules/<name>/` with a `descriptor.json` and a `corpus/`.
+- markets: SEC-style filings, market glossary (revenue, EPS, EBITDA).
+- legal: NDA / MSA templates, GDPR summary (confidentiality, IP, data rights).
+- handbook: synthetic firm handbook (PTO, expenses, security policy).
 
-Security note: a `descriptor.json` with `"kind": "compute"` names a Python `module:class` that
-`Registry.load` will dynamic-import and instantiate (see `consilium/registry.py`). Treat
-`modules_dir` exactly like any other Python import path: only point it at directories you trust.
-This path is disabled by default; loading a compute descriptor requires the caller to pass
-`Registry.load(modules_dir, embedder, allow_compute_adapters=True)` as an explicit opt-in. No
-shipped module in this repo uses `kind: "compute"`; the finance compute module (below) is
-registered directly in Python, not from disk.
+Add a module: `modules/<name>/` with a `descriptor.json` and a `corpus/`.
+
+Security: a `descriptor.json` with `"kind": "compute"` names a Python `module:class` that `Registry.load` dynamic-imports and instantiates (`consilium/registry.py`). Only point `modules_dir` at directories you trust. Disabled by default. Enable with `Registry.load(modules_dir, embedder, allow_compute_adapters=True)`. No shipped module uses `kind: "compute"`. The finance compute module is registered directly in Python.
 
 ## Scope and limitations (v1)
 
-- Synthetic, public-safe corpora: no real proprietary data, safe to publish.
-- Gateway-independent: deterministic hashing retrieval. An optional LLM-router / LLM-composer
-  upgrade can activate when a local model gateway is reachable (v2).
-- Deferred to later v2 work: a UI/console, private/on-prem deployment + access control, real
-  corpora, optional LLM router/composer when a gateway is up.
-- Known open failure mode (documented, not hidden): the query-relevance floor
-  (`compose(..., query_relevance_floor=0.05)`) is deliberately low, so the router's anchor
-  gate, not the relevance floor, is what stops the incidental-keyword out-of-scope cases
-  (`eval/eval_baseline.py` measures the naive baseline's cited chunks at rel≈0.15–0.22, above
-  that 0.05 floor). A jargon-heavy out-of-scope query that name-drops ≥2 subject tokens without
-  genuinely asking about them can still slip the floor; the anchor gate is the real backstop.
-  Raising / calibrating that floor is queued.
-- Threshold provenance: the router's floor/weights/anchor gates and the integrity gate's support
-  floor (`consilium/router.py`, `consilium/composer.py`) are tuned against the shipped 16-case
-  fixture set (`eval/cases.json`), not validated against an independent, held-out query
-  distribution. The "1.000" headline numbers may not generalize past this demo corpus.
+- Synthetic corpora only.
+- Deterministic hashing retrieval. Optional LLM router/composer when a local model gateway is reachable (v2).
+- Deferred to v2: UI/console, private/on-prem deployment with access control, real corpora.
+- Open failure mode: `compose(..., query_relevance_floor=0.05)` is low. The router's anchor gate stops incidental-keyword out-of-scope cases (`eval/eval_baseline.py`: naive baseline's cited chunks at rel≈0.15–0.22, above 0.05). A jargon-heavy out-of-scope query naming ≥2 subject tokens can still slip the floor. Calibrating the floor is queued.
+- Router floor/weights/anchor gates and the integrity-gate support floor (`consilium/router.py`, `consilium/composer.py`) are tuned on the shipped 16-case set (`eval/cases.json`). No held-out query set. The 1.000 numbers may not generalize past this corpus.
 
 ## Integrity hardening
 
-Cross-corpus conflict detection + trust resolution, and corroboration-based poison quarantine
-(`consilium/hardening.py`, wired into `compose(..., harden=True)`).
+Cross-corpus conflict detection with trust resolution. Corroboration-based poison quarantine. `consilium/hardening.py`, via `compose(..., harden=True)`.
 
 ```
 python eval/eval_v2.py
 ```
 
-Measured (eval_v2, exit 0, 11/11 checks):
+eval_v2: exit 0, 11/11 checks.
 
-- cross-corpus conflict detected, resolved to the higher-trust source, loser surfaced (not hidden);
-- magnitude-aware: `$4.2 billion` vs `$4.2 million` is flagged; `$4.2 billion` == `$4,200 million`
-  is not; incidental years/percents are ignored (no false conflicts);
-- intra-corpus poison quarantined, corroborated legit kept;
-- poison-by-flooding resisted: three exact poison copies are all quarantined; near-duplicates
-  collapse to one source, so copy-flooding cannot invert the defense;
-- negative controls (agreement, different-topic) produce zero false conflicts.
+- Cross-corpus conflict detected, resolved to the higher-trust source, loser surfaced.
+- `$4.2 billion` vs `$4.2 million` flagged. `$4.2 billion` == `$4,200 million` not flagged. Incidental years/percents ignored.
+- Intra-corpus poison quarantined, corroborated legit kept.
+- Three exact poison copies all quarantined. Near-duplicates collapse to one source.
+- Agreement and different-topic controls: zero false conflicts.
 
-Limitations (deterministic heuristic; closing these needs a future NLI / trust-provenance
-layer, not covered by heterogeneous routing below):
+Limitations (deterministic heuristic; closing them needs an NLI / trust-provenance layer):
 
-- numeric magnitudes only: word-spelled numbers and non-numeric conflicts (e.g. "Delaware" vs
-  "Nevada") are not detected;
-- same-magnitude different-metric claims (revenue vs net income) can false-positive if textually
-  similar (no attribute extraction yet);
-- paraphrase-flooding (non-identical poison copies) is not defeated by dedup; a real security
-  boundary needs per-source trust / provenance / signing;
-- count-based corroboration is advisory, not a security boundary; ambiguous conflicts are surfaced
-  (flagged), never silently resolved.
+- Numeric magnitudes only. Word-spelled numbers and non-numeric conflicts ("Delaware" vs "Nevada") are not detected.
+- Same-magnitude different-metric claims (revenue vs net income) can false-positive if textually similar.
+- Paraphrase-flooding is not defeated by dedup. Needs per-source trust / provenance / signing.
+- Count-based corroboration is advisory. Ambiguous conflicts are flagged, not resolved.
 
 ## Heterogeneous routing (retrieval + compute)
 
-The switchboard routes across retrieval and compute modules with one router. A `ComputeModule`
-(`consilium/compute.py`) is routable like any text module (it has a descriptor the router scores),
-but instead of retrieving a passage, it parses the query and returns an audited, deterministic
-computation (a no-arithmetic-by-LLM audited compute pattern). Invalid input (e.g. non-positive
-spot/strike/expiry/volatility) returns the same `{ok: False, tool, error}` envelope as unparseable
-input: it never fabricates a number or crashes. Try it via the demo:
-`python run_demo.py --with-compute --query "..."` (see Quickstart above).
+One router over retrieval and compute modules. A `ComputeModule` (`consilium/compute.py`) has a descriptor and returns an audited, deterministic computation instead of a passage. Invalid input returns `{ok: False, tool, error}`, same as unparseable input. Demo: `python run_demo.py --with-compute --query "..."`.
 
 ```
 python eval/eval_v3.py
 ```
 
-Measured (eval_v3, exit 0, 5/5): a finance-math query routes to the compute module and returns the
-exact audited Black-Scholes value (10.450584); a policy question still routes to a retrieval module
-(handbook); an out-of-scope query abstains. Retrieval and integrity-hardening evals remain green
-(additive, no regression).
+eval_v3: exit 0, 5/5.
+
+- Finance-math query routes to the compute module, returns Black-Scholes 10.450584.
+- Policy question routes to a retrieval module (handbook).
+- Out-of-scope query abstains.
+- Retrieval and hardening evals still green.
 
 ## Generic compute adapters
 
-`consilium/capability.py` documents the structural contract the router/composer actually need
-(`name`, `descriptor`, `chunks`, `centroid()`, `retrieve()`); `Registry.load` can register a
-`kind: "compute"` module straight from disk by dynamic-importing an `adapter` class named in its
-`descriptor.json` (see the security note above; this path is opt-in via `allow_compute_adapters=True`).
+`consilium/capability.py` documents the contract the router/composer need: `name`, `descriptor`, `chunks`, `centroid()`, `retrieve()`. `Registry.load` registers a `kind: "compute"` module from disk by importing the `adapter` class named in its `descriptor.json` (opt-in via `allow_compute_adapters=True`).
 
 ```
 python eval/eval_core.py
 ```
 
-Measured (eval_core, exit 0, 3/3): (a) a query that anchors only the compute module still returns
-the original heterogeneous-routing response shape (no regression); (b) a query that anchors both a
-compute module and a retrieval module returns both an audited computation and a cited text answer; (c) a throwaway
-disk-registered `kind: "compute"` module (descriptor + adapter class, no coupling to any module in
-this repo) loads and runs through the generic `Registry.load` path.
+eval_core: exit 0, 3/3.
 
-## What makes this different
-
-The mechanisms that separate this from a plain retrieval switchboard are the integrity gate's
-claim-to-source binding (an unsupported claim is dropped, not shipped), cross-corpus conflict
-detection with trust-calibrated conflict resolution (`consilium/hardening.py`: when two modules
-disagree on the same topic, the higher-`trust_tier` source wins and the loser is surfaced, never
-hidden), and the router's abstention and anchor gates that refuse an out-of-scope query instead of
-guessing. These are the parts most worth hardening further.
+- Query anchoring only the compute module: heterogeneous-routing response shape unchanged.
+- Query anchoring a compute and a retrieval module: audited computation and cited text answer.
+- Throwaway disk-registered `kind: "compute"` module loads and runs through `Registry.load`.
 
 ## License
 

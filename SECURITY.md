@@ -2,29 +2,23 @@
 
 ## Supported versions
 
-This is an early-stage portfolio project. Security fixes are applied to the
-latest release on the default branch only.
-
 | Version | Supported |
 |---|---|
-| 0.1.x (latest) | ✅ |
-| < 0.1.0 | ❌ |
+| 0.1.x (latest) | Yes |
+| < 0.1.0 | No |
+
+Fixes go to the latest release on the default branch.
 
 ## Reporting a vulnerability
 
-Please report suspected vulnerabilities privately rather than opening a public
-issue. Use GitHub's **[Report a vulnerability](https://github.com/trentmilam/agentic-rag/security/advisories/new)**
-(the Security tab's Advisories section) form, or email **298508156+trentmilam@users.noreply.github.com**.
+Report privately. Use GitHub's [Report a vulnerability](https://github.com/trentmilam/agentic-rag/security/advisories/new) form, or email **298508156+trentmilam@users.noreply.github.com**.
 
-Include enough detail to reproduce (affected file/endpoint, inputs, and observed
-vs. expected behavior). You can expect an initial acknowledgment within a few
-days; please allow reasonable time for a fix before any public disclosure.
+Include affected file or endpoint, inputs, and observed vs. expected behavior. Acknowledgment within a few days.
+Allow reasonable time for a fix before public disclosure.
 
-## Scope notes
+## Scope
 
-- This project runs entirely locally: it fetches a public corpus over HTTPS at
-  build time and serves queries with no LLM and no network at query time. It has
-  no authentication surface, no secrets, and no server listening on a network port
-  (the MCP server speaks over stdio to a local client).
-- The corpus is fetched from `rfc-editor.org` and `iana.org`; this project
-  redistributes none of it.
+- Runs locally; fetches a public corpus over HTTPS at build time
+- No LLM and no network at query time
+- No authentication surface, no secrets, no network port (MCP server uses stdio)
+- Corpus comes from `rfc-editor.org` and `iana.org`; none of it is redistributed

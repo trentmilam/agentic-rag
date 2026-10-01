@@ -1,102 +1,64 @@
 # chain-rag
 
-A cited retrieval system over primary blockchain protocol documentation
-(Bitcoin, Ethereum, Solana, Monero, Polygon, and Cardano), built on
-[`packages/consilium`](../consilium)'s router/citation-gating spine and
-[`packages/ragpack`](../ragpack)'s embedder/chunker/vector-store machinery. Ask a
-real technical question about any of the six chains (or one that spans two of
-them) and get back an answer built entirely out of real cited chunks from the
-source documents, or an honest abstain. There is no LLM anywhere in the answer
-path: retrieval, a deterministic router, and a citation-integrity gate, nothing
-else, so every line of every answer traces to an actual document.
+Cited retrieval over primary blockchain protocol documentation: Bitcoin, Ethereum, Solana, Monero, Polygon, Cardano.
 
-It is a second, independent vertical on the same architecture: its own Consilium
-`Registry`/`Router` instance for a standalone domain, zero coupling to any other
-vertical, sharing only the generic library underneath.
+- Built on [`packages/consilium`](../consilium) (router, citation gating) and [`packages/ragpack`](../ragpack) (embedder, chunker, vector store).
+- Answers are cited chunks or an abstain.
+- No LLM in the answer path: retrieval, deterministic router, citation-integrity gate.
+- Own Consilium `Registry`/`Router` instance.
 
-## This package is not standalone
+## Dependencies
 
-`chainrag` is `packages/chainrag` in the `agentic-rag` monorepo. `consilium` and
-`ragpack` are packages of the same repository: once the repo root's
-`pip install -e .` has run, `import consilium` and `import ragpack` resolve
-with no cloning and no `sys.path` insertion.
+After the repo root `pip install -e .`, `import consilium` and `import ragpack` resolve.
 
-One dependency is genuinely still outside this repo:
-[rag-reliability](https://github.com/trentmilam/rag-reliability), which supplies
-four of its gate tools (VecStamp, ChunkLedger, Plumbline, Legigate). It is
-public now; clone it next to the agentic-rag repo itself (a sibling directory,
-not nested inside it) to run `scripts/run_reliability_gates.py`. The chat UI,
-the ingest pipeline, and the eval all run without it; only that one script
-needs it.
+External: [rag-reliability](https://github.com/trentmilam/rag-reliability), for four gate tools (VecStamp, ChunkLedger, Plumbline, Legigate). Only `scripts/run_reliability_gates.py` needs it.
 
 ```
 git clone https://github.com/trentmilam/rag-reliability
 ```
 
-Neither `rag-reliability`'s tools nor `chainrag` itself are pip-installed or
-vendored the way `consilium`/`ragpack` are: `rag-reliability` is imported by
-putting each individual tool subdir (it has no `__init__.py`) on `sys.path`.
-See `chainrag/_paths.py::add_sibling_paths()`, called by every entry file
-before importing anything from that sibling repo.
-
-Move this repo without `consilium` installed and every import fails
-immediately and loudly; there is no silent degraded mode.
+- Clone it as a sibling of the agentic-rag repo.
+- Each tool subdir is put on `sys.path` (`chainrag/_paths.py::add_sibling_paths()`). It has no `__init__.py`.
+- Without `consilium` installed, every import fails.
 
 ## Running it
 
 ```
 cd packages/chainrag
 app.bat     # chat UI (gr.ChatInterface), own venv, no browser auto-launch
-demo.bat    # scripted 8-question transcript, no typing required
+demo.bat    # scripted 8-question transcript
 ```
 
-Both `app.bat` and `demo.bat` hardcode `%~dp0.venv\Scripts\python.exe`, so
-create that venv first: `python -m venv .venv`, then install from
-`requirements.txt` (it pins a CUDA-tagged `torch` build; see the comment at
-the top of that file for the matching `--index-url`).
+- Both use `%~dp0.venv\Scripts\python.exe`. Create it with `python -m venv .venv`, then install `requirements.txt` (pins a CUDA-tagged `torch`; see the file header for `--index-url`).
+- Offline at query time apart from a local Qdrant read and local embedding.
 
-Both are fully offline at query time beyond a local Qdrant read and local
-embedding: no live network calls, no LLM.
-
-## Running the eval
+## Eval
 
 ```
 cd packages/chainrag
 .venv/Scripts/python.exe eval/eval_chainrag.py
 ```
 
-Deterministic given the already-ingested corpus (22 documents, ~1,055 chunks
-across all 6 chains; see `sources.yaml`). Uses the real embedder
-(`BAAI/bge-base-en-v1.5`), the exact one that ingested the corpus, so this
-proves genuine semantic retrieval end-to-end, not wiring alone. Eight checks:
+- 22 documents, ~1,055 chunks, 6 chains (`sources.yaml`).
+- Deterministic given the ingested corpus.
+- Embedder: `BAAI/bge-base-en-v1.5`, same as ingest.
+- 8 checks:
+  - 6 held-out technical questions, one per chain: expected chain cited, no abstain.
+  - 1 cross-chain comparison (Bitcoin PoW vs Cardano Ouroboros PoS): both chains cited.
+  - 1 out-of-scope question (cast iron skillet): abstain.
 
-- one held-out, naturally-phrased technical question **per chain** (6): asserts
-  the expected chain contributed a citation and the router didn't abstain;
-- one genuine **cross-chain comparison** (Bitcoin PoW vs. Cardano's Ouroboros
-  PoS): asserts both expected chains contributed citations;
-- one **out-of-scope** question ("How do you properly season a cast iron
-  skillet?"): asserts an honest abstain.
+## Router calibration
 
-## Real dense embedders need per-corpus calibration
+Consilium library defaults (`floor=0.11`, `anchor_centroid=0.25`, `anchor_best_chunk=0.25`) were set for `HashEmbedder`. A dense sentence embedder has higher baseline cosine similarity.
 
-Consilium's `Router` ships library defaults (`floor=0.11`, `anchor_centroid=0.25`,
-`anchor_best_chunk=0.25`) that assume a near-zero baseline cosine similarity
-between unrelated text: true for a crude bag-of-words `HashEmbedder`, **false**
-for a real dense sentence embedder. Measured directly against this corpus: every
-genuine in-scope query's anchor module has descriptor-centroid cosine >=0.626 and
->=2 subject-keyword hits, while 10 diverse out-of-scope probes (recipes, weather,
-gibberish) never exceeded centroid 0.492 and always had 0 keyword hits. But
-best-chunk cosine (a max over ~1,055 chunks) is a saturated order statistic that
-cleared the 0.25 anchor threshold for *every* probe, including gibberish. Left at
-the library defaults, the out-of-scope check reliably failed and the answer to
-every query, on-topic or not, cited all six chains indiscriminately.
+Measured on this corpus:
 
-`chainrag/bootstrap.py::ROUTER_KWARGS` recalibrates `floor`/`anchor_centroid`/
-`anchor_best_chunk` for this embedder+corpus pair specifically, using Consilium's
-own documented per-instance constructor kwargs. Consilium's shared source and its
-library-wide defaults (which every other Consilium instance still uses) are
-untouched. This is the kind of gap the reliability-gate suite below is built to
-surface rather than paper over.
+- In-scope queries: descriptor-centroid cosine >=0.626, >=2 subject-keyword hits.
+- 10 out-of-scope probes: centroid never above 0.492, 0 keyword hits.
+- Best-chunk cosine cleared 0.25 for every probe, gibberish included.
+- At library defaults, the out-of-scope check failed and every query cited all six chains.
+
+`chainrag/bootstrap.py::ROUTER_KWARGS` sets `floor`, `anchor_centroid` and `anchor_best_chunk` for this embedder and corpus. Consilium's shared source and defaults are unchanged.
 
 ## Reliability gates
 
@@ -104,20 +66,14 @@ surface rather than paper over.
 .venv/Scripts/python.exe scripts/run_reliability_gates.py
 ```
 
-Four gates from `rag-reliability`, run against the real ingested corpus:
+Run against the ingested corpus.
 
-- `VecStamp` checks embedding build/load identity: the query-time embedder is
-  bit-identical to the one that ingested the corpus.
-- `ChunkLedger` checks reference-free conservation, that no document or chunk
-  silently dropped structural content (headings, tables, code blocks, links)
-  during ingest.
-- `Plumbline` checks that every citation resolves back to a real span in its
-  source document (fuzzy match survives whitespace/OCR noise, not genuine
-  corruption).
-- `Legigate` is the OCR legibility gate. It correctly reports N/A here, since
-  the real corpus needed zero OCR (all 22 sources are born-digital).
+- `VecStamp`: query-time embedder matches the ingest embedder.
+- `ChunkLedger`: no document or chunk dropped structural content (headings, tables, code blocks, links) during ingest.
+- `Plumbline`: every citation resolves to a real span in its source.
+- `Legigate`: OCR legibility. N/A here, all 22 sources are born-digital.
 
-Current reference run: **3 PASS, 0 FAIL, 1 N/A**.
+Reference run: 3 PASS, 0 FAIL, 1 N/A.
 
 ## Layout
 

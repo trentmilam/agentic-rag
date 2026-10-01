@@ -1,11 +1,10 @@
 # RAGpack
 
-**Mill your documents into a searchable vector store: GPU-optional embeddings, optional GPU OCR, Qdrant-backed.**
+Documents to a searchable vector store. GPU-optional embeddings, optional GPU OCR, Qdrant-backed.
 
-`RAGpack` turns a folder of documents (Markdown, code, text, and PDFs) into a semantic search
-index in one line. It extracts text (with optional **GPU OCR** for scanned PDFs), chunks it with
-overlap, embeds it on **CPU or CUDA**, and stores it in **Qdrant**: embedded on disk with zero
-setup, or a real server when you scale.
+- Input: Markdown, code, text, PDFs.
+- Pipeline: extract (optional GPU OCR), chunk with overlap, embed on CPU or CUDA, store in Qdrant.
+- Qdrant modes: `:memory:`, embedded on-disk path, remote URL.
 
 ```python
 from ragpack import RAGpack, Settings
@@ -16,7 +15,7 @@ for hit in mill.search("how does the retry logic work?"):
     print(f"{hit.score:.3f}  {hit.source}\n{hit.text[:200]}\n")
 ```
 
-…or from the shell:
+Shell:
 
 ```bash
 ragpack --qdrant ./data ingest ./docs
@@ -25,9 +24,7 @@ ragpack --qdrant ./data search "how does the retry logic work?"
 
 ## Install
 
-Already installed as part of this repo: the root `pip install -e .` (see the top-level README
-Quickstart) makes `import ragpack` resolve. The GPU/OCR extras are declared on this package's own
-`pyproject.toml`, so install them from here:
+After the repo root `pip install -e .` (see the top-level README Quickstart), `import ragpack` resolves. Extras:
 
 ```bash
 cd packages/ragpack
@@ -35,26 +32,21 @@ pip install -e ".[gpu]"     # CUDA embeddings (fastembed-gpu + onnxruntime-gpu)
 pip install -e ".[ocr]"     # + GPU OCR for scanned PDFs (docTR, uses CUDA when a CUDA PyTorch build is present)
 ```
 
-## CPU or GPU: one switch
+## Device
 
-`device="auto"` (the default) uses CUDA when ONNX Runtime exposes a `CUDAExecutionProvider`, and
-falls back to CPU otherwise. `device="cuda"` is **fail-closed**: it raises rather than silently
-dropping to CPU, so a GPU run is always actually a GPU run. Set it in code, per-CLI-call (`--device`),
-or via `RAGPACK_DEVICE`.
+- `device="auto"` (default): CUDA if ONNX Runtime exposes `CUDAExecutionProvider`, else CPU.
+- `device="cuda"`: raises if CUDA is unavailable. No CPU fallback.
+- Set in code, `--device`, or `RAGPACK_DEVICE`.
 
-## What you get
+## Features
 
-Extraction covers plain text, code, and markdown, plus text-layer PDFs via `pypdf`; the `[ocr]`
-extra adds scanned or image-only PDFs through docTR, GPU-accelerated automatically when a CUDA
-PyTorch build is present (`ocr="auto"` only OCRs when the text layer is empty or garbled).
-Chunking is paragraph-aware with overlapping windows, so meaning that straddles a boundary is never
-split away from its context. Every point is keyed by *(source, chunk index, content hash)*,
-independent of the absolute path, so re-ingesting the same content updates in place instead of
-creating duplicates. Embeddings default to `fastembed` (`BAAI/bge-small-en-v1.5`, 384-dim), with a
-zero-dependency `HashEmbedder` available for a fully offline quick start. The store is Qdrant, in
-one of three modes: `:memory:` (ephemeral), an embedded on-disk path (no server), or a remote URL.
+- Extraction: text, code, markdown, text-layer PDFs (`pypdf`). `[ocr]` adds scanned PDFs via docTR. `ocr="auto"` OCRs only when the text layer is empty or garbled.
+- Chunking: paragraph-aware, overlapping windows.
+- Point key: *(source, chunk index, content hash)*, independent of absolute path. Re-ingest updates in place.
+- Embeddings: `fastembed` (`BAAI/bge-small-en-v1.5`, 384-dim) by default. Zero-dependency `HashEmbedder` for offline use.
+- Pluggable embedder: `RAGpack(settings, embedder=...)` takes any object with `dim`, `embed(texts)`, `embed_one(text)`.
 
-## Zero-setup quick start (no model download)
+## No model download
 
 ```python
 from ragpack import RAGpack, Settings
@@ -64,17 +56,9 @@ mill.ingest("./docs")
 print(mill.search("your question")[0].source)
 ```
 
-## Design notes
+`:memory:` lives in one `RAGpack` instance. For separate processes (the CLI), use an on-disk path or URL. The CLI defaults to `./ragpack_qdrant`.
 
-A `:memory:` store lives inside one `RAGpack` instance, so ingest and search have to happen on the
-*same* object. For separate processes (e.g. the CLI), use an on-disk path or a URL so the index
-persists between commands (the CLI defaults to `./ragpack_qdrant`). The GPU path is fail-closed:
-`device="cuda"` verifies `CUDAExecutionProvider` is actually available before embedding, so there
-is no quiet, 10×-slower CPU fallback hiding inside a "GPU" run. The embedder is pluggable, too:
-`RAGpack(settings, embedder=...)` accepts any object with `dim`, `embed(texts)`, and
-`embed_one(text)`, so you can swap in your own model in place of the built-in `HashEmbedder`.
-
-## Install & test
+## Tests
 
 ```bash
 cd packages/ragpack   # if not already there
@@ -82,8 +66,7 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-Zero-config tests run fully offline (the `HashEmbedder` + an in-memory Qdrant); CI runs them on
-Python 3.10–3.12.
+Tests run offline (`HashEmbedder`, in-memory Qdrant). CI: Python 3.10-3.12.
 
 ## License
 
